@@ -1,5 +1,6 @@
 from manager import Manager
+from screens.HomeWindow import HomeWindow
 
 if __name__ == "__main__":
-    app = Manager()
+    app = HomeWindow()
     app.mainloop()
