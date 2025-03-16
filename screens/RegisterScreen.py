@@ -1,5 +1,4 @@
 import tkinter as tk
-from tkinter import messagebox
 
 
 class RegisterScreen(tk.Frame):
@@ -31,10 +30,4 @@ class RegisterScreen(tk.Frame):
         self.user_exists_button.pack()
 
     def register_user(self):
-        res = self.controller.register_user(self.username_entry.get(), self.password_entry.get())
-
-        if res:
-            messagebox.showinfo('Usuario registrado', 'El usuario ha sido registrado')
-            self.controller.show_frame('LoginScreen')
-        else:
-            messagebox.showerror('Error', 'Ocurrió un error al registrar el usuario')
+        self.controller.register_user(self.username_entry.get(), self.password_entry.get())

@@ -30,7 +30,6 @@ class UserRepository:
 
             row = res.fetchone()
 
-            print(row)
             if row is None:
                 return None
 

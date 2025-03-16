@@ -1,9 +1,4 @@
 import tkinter as tk
-from tkinter import Toplevel
-
-from auth.AuthManager import AuthManager
-from container import Container
-from screens.RegisterScreen import RegisterScreen
 
 
 class LoginScreen(tk.Frame):
@@ -13,8 +8,6 @@ class LoginScreen(tk.Frame):
         self.controller = controller
 
         self.pack()
-
-
         self._widgets()
 
 
@@ -39,7 +32,7 @@ class LoginScreen(tk.Frame):
         self.register_button.pack()
 
     def login_user(self):
-        res = self.controller.login_user(self.username_entry.get(), self.password_entry.get())
+        self.controller.login_user(self.username_entry.get(), self.password_entry.get())
 
 def main():
     app = tk.Tk()

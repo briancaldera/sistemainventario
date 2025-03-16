@@ -1,8 +1,16 @@
 from tkinter import Tk, Frame
+from typing import override
+
+from auth.AuthManager import AuthManager
 from container import Container
 from ttkthemes import ThemedStyle
 
-class Manager(Tk):
+from event.EventQueue import EventQueue
+from event.EventSubscriber import EventSubscriber
+from tkinter import messagebox
+
+
+class Manager(Tk, EventSubscriber):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.title("Sistema de Ventas")
@@ -13,6 +21,11 @@ class Manager(Tk):
         self.container = Frame(self, bg="#6CD9E3")
         self.container.pack(fill="both", expand=True)
 
+        self.auth = AuthManager.get_instance()
+
+        event_queue = EventQueue.get_instance()
+        event_queue.subscribe(self, 'user')
+
         self.frames = {
             Container: None
         }
@@ -20,6 +33,9 @@ class Manager(Tk):
         self.load_frames()
         self.show_frame(Container)
         self.set_theme()
+
+    def logout(self):
+        self.auth.logout()
 
     def load_frames(self):
         for frame_class in self.frames.keys():  # Corregido el nombre de la variable
@@ -34,6 +50,12 @@ class Manager(Tk):
     def set_theme(self):
         style = ThemedStyle(self)   
         style.set_theme("breeze")
+
+    @override
+    def receive(self, message: str):
+        if message == 'user-logout':
+            messagebox.showinfo('Cerrando sesión', 'Sesión cerrada')
+            self.destroy()
 
 def main():
     app = Manager()  # Corregido el nombre de la clase
