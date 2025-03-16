@@ -43,6 +43,9 @@ class Container(tk.Frame):
         btninventario = Button(frame1, bg="#c62e26", fg="white", font="sans 18 bold", text="ir a inventario", command=self.inventario)
         btninventario.place(x=500, y=130, width=240, height=60)
 
+        logout_button = Button(frame1, text="Cerrar sesión", command=self.controlador.logout)
+        logout_button.place(x=500, y=230, width=240, height=60)
+
         self.logo_image = Image.open("imagenes/registradora.webp")
         self.logo_image = self.logo_image.resize((280,280))
         self.logo_image = ImageTk.PhotoImage(self.logo_image)
