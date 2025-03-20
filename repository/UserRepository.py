@@ -19,7 +19,7 @@ class UserRepository:
     def create_table(self):
         with SqliteConnection.get_connection() as conn:
             conn.execute(
-                'create table if not exists users (id integer primary key autoincrement, name varchar(255) not null unique, password text, created_at datetime)')
+                'create table if not exists users (id integer primary key autoincrement, name varchar(255) not null unique, password text, created_at datetime, rol varchar(255) not null)')
 
     def find(self, name: Name) -> User | None:
 
@@ -37,8 +37,9 @@ class UserRepository:
             name = Name(row[1])
             password = Password.from_hash(row[2])
             dt = datetime.fromisoformat(row[3])
+            rol = row[4]
 
-            user = User(id, name, password, dt)
+            user = User(id, name, password, dt, rol)
 
             return user
 
@@ -48,11 +49,12 @@ class UserRepository:
 
             try:
                 cursor = conn.cursor()
-                res = cursor.execute('insert into users(name, password, created_at) values (?, ?, ?)',
+                res = cursor.execute('insert into users(name, password, created_at, rol) values (?, ?, ?, ?)',
                                      [
                                          user.name.name,
                                          user.password.hashed_pw,
                                          user.created_at,
+                                         user.rol,
                                      ])
 
                 conn.commit()

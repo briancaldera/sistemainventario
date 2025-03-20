@@ -44,7 +44,7 @@ class AuthManager:
 
         password = Password.from_password(password)
 
-        user = User(None, name, password, datetime.now())
+        user = User(None, name, password, datetime.now(), rol= 'vendedor')
 
         self.userRepo.save(user)
 
@@ -60,6 +60,10 @@ class AuthManager:
 
         name = Name(name)
         user = self.userRepo.find(name)
+
+        if user is None: #verificar si el usuario existe
+            return False #retorna falso si el usuario no existe
+
 
         res = user.password.compare(password)
 

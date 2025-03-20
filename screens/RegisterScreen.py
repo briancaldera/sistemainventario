@@ -19,7 +19,7 @@ class RegisterScreen(tk.Frame):
 
         self.password_label = tk.Label(self, text='Contraseña:')
         self.password_label.pack()
-        self.password_entry = tk.Entry(self)
+        self.password_entry = tk.Entry(self, show='*')
         self.password_entry.pack()
 
         self.register_button = tk.Button(self, text='Registrar', command=self.register_user)
@@ -30,4 +30,6 @@ class RegisterScreen(tk.Frame):
         self.user_exists_button.pack()
 
     def register_user(self):
-        self.controller.register_user(self.username_entry.get(), self.password_entry.get())
+        username = self.username_entry.get()
+        password = self.password_entry.get()
+        self.controller.register_user(username, password) # Llamar al controlador con las credenciales
