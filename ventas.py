@@ -7,11 +7,12 @@ class Ventas(tk.Frame):
 
     db_name = "database.db"
 
-    def __init__(self, parent):
+    def __init__(self, parent, controller):
         super().__init__(parent)
         self.numero_factura_actual = self.obtener_numero_factura_actual()
         self.widgets()
         self.mostrar_numero_factura()
+        self.controller = controller
 
 
     def widgets(self):

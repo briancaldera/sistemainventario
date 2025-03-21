@@ -30,6 +30,8 @@ class HomeWindow(tk.Tk):
 
             frame.grid(row=0, column=0, sticky='nsew')
 
+            self.show_frame('LoginScreen') # Mostrar LoginScreen al inicio
+
     def show_frame(self, page_name):
         frame = self.frames[page_name]
         frame.tkraise()

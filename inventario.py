@@ -7,8 +7,9 @@ class Inventario(tk.Frame):
 
     db_name = "database.db"
 
-    def __init__(self, parent):
+    def __init__(self, parent, controller):
         super().__init__(parent)
+        self.controller = controller
         self.pack()
         self.conn = sqlite3.connect(self.db_name)
         self.cursor = self.conn.cursor()
