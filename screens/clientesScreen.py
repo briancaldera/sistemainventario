@@ -1,11 +1,21 @@
 import tkinter as tk
 import tkinter.ttk as ttk
+from tkinter import messagebox
+
+from model.cliente import Cliente
+from services.ClienteService import ClienteService
+
 
 class ClientesScreen(tk.Frame):
+
+
+
     def __init__(self, parent, controller):
         super().__init__(parent)
         self.controller = controller
+        self._cliente_service = ClienteService()
         self.widgets()
+        self.actualizar_clientes()
 
     def widgets(self):
         # Frame para el título
@@ -27,6 +37,9 @@ class ClientesScreen(tk.Frame):
 
         # Campos del formulario
         tk.Label(lblframe_cliente, text="Cédula:", font=("Arial", 12), bg="#C6D9E3").place(x=10, y=10)
+
+        self.id_entry = ttk.Entry(lblframe_cliente, font=("Arial", 12))
+
         self.cedula_entry = ttk.Entry(lblframe_cliente, font=("Arial", 12))
         self.cedula_entry.place(x=140, y=10, width=240, height=40)
 
@@ -43,9 +56,12 @@ class ClientesScreen(tk.Frame):
         self.direccion_entry.place(x=140, y=190, width=240, height=40)
 
         # Botones del formulario
-        ttk.Button(lblframe_cliente, text="Agregar", command=self.agregar_cliente).place(x=80, y=250, width=240, height=40)
-        ttk.Button(lblframe_cliente, text="Editar", command=self.editar_cliente).place(x=80, y=310, width=240, height=40)
-        ttk.Button(lblframe_cliente, text="Eliminar", command=self.eliminar_cliente).place(x=80, y=370, width=240, height=40)
+        ttk.Button(lblframe_cliente, text="Agregar", command=self.agregar_cliente).place(x=80, y=250, width=240,
+                                                                                         height=40)
+        ttk.Button(lblframe_cliente, text="Editar", command=self.editar_cliente).place(x=80, y=310, width=240,
+                                                                                       height=40)
+        ttk.Button(lblframe_cliente, text="Eliminar", command=self.eliminar_cliente).place(x=80, y=370, width=240,
+                                                                                           height=40)
 
         # Treeview para la tabla de clientes
         treframe = tk.Frame(frame2, bg="white")
@@ -57,17 +73,21 @@ class ClientesScreen(tk.Frame):
         Scrol_x = ttk.Scrollbar(treframe, orient=tk.HORIZONTAL)
         Scrol_x.pack(side=tk.BOTTOM, fill=tk.X)
 
-        self.tree = ttk.Treeview(treframe, columns=("Cédula", "Nombre", "Telefono", "Direccion"), show="headings", yscrollcommand=Scrol_y.set, xscrollcommand=Scrol_x.set)
+        self.tree = ttk.Treeview(treframe, columns=("ID", "Cédula", "Nombre", "Telefono", "Direccion"), show="headings",
+                                 yscrollcommand=Scrol_y.set, xscrollcommand=Scrol_x.set, selectmode='browse')
         self.tree.pack(fill=tk.BOTH, expand=True)
+        self.tree.bind('<<TreeviewSelect>>', func=self.on_cliente_selected)
 
         Scrol_y.config(command=self.tree.yview)
         Scrol_x.config(command=self.tree.xview)
 
-        self.tree.heading("#1", text="Cédula")
-        self.tree.heading("#2", text="Nombre")
-        self.tree.heading("#3", text="Teléfono")
-        self.tree.heading("#4", text="Dirección")
+        self.tree.heading("#1", text="ID")
+        self.tree.heading("#2", text="Cédula")
+        self.tree.heading("#3", text="Nombre")
+        self.tree.heading("#4", text="Teléfono")
+        self.tree.heading("#5", text="Dirección")
 
+        self.tree.column("ID", anchor="center")
         self.tree.column("Cédula", anchor="center")
         self.tree.column("Nombre", anchor="center")
         self.tree.column("Telefono", anchor="center")
@@ -79,16 +99,113 @@ class ClientesScreen(tk.Frame):
 
     def agregar_cliente(self):
         # Implementar la lógica para agregar un cliente
+        cedula = self.cedula_entry.get()
+        nombre = self.nombre_entry.get()
+        telefono = self.telefono_entry.get()
+        direccion = self.direccion_entry.get()
+
+        try:
+            self._cliente_service.save(cedula, nombre, telefono, direccion)
+            self.limpiar_campos()
+            self.actualizar_clientes()
+
+            tk.messagebox.showinfo('Cliente registrado', 'Cliente registrado exitosamente')
+
+        except Exception as e:
+            print(e)
+            tk.messagebox.showerror('Error', 'Ocurrió un error al intentar guardar al cliente')
+
         pass
 
     def editar_cliente(self):
-        # Implementar la lógica para editar un cliente
+        id = self.id_entry.get()
+        cedula = self.cedula_entry.get()
+        nombre = self.nombre_entry.get()
+        telefono = self.telefono_entry.get()
+        direccion = self.direccion_entry.get()
+
+        data = {
+            'cedula': cedula,
+            'nombre': nombre,
+            'telefono': telefono,
+            'direccion': direccion
+        }
+
+        try:
+
+            self._cliente_service.update_cliente(int(id), data)
+            self.limpiar_campos()
+            self.actualizar_clientes()
+
+            tk.messagebox.showinfo('Cliente actualizado', 'Cliente actualizado exitosamente')
+
+        except Exception as e:
+            print(e)
+            tk.messagebox.showerror('Error', 'Ocurrió un error al intentar actualizar al cliente')
+
         pass
 
     def eliminar_cliente(self):
-        # Implementar la lógica para eliminar un cliente
+        id = self.id_entry.get()
+
+        try:
+
+            self._cliente_service.delete_cliente(int(id))
+            self.limpiar_campos()
+            self.actualizar_clientes()
+
+            tk.messagebox.showinfo('Cliente eliminado', 'Cliente eliminado exitosamente')
+
+        except Exception as e:
+            print(e)
+            tk.messagebox.showerror('Error', 'Ocurrió un error al intentar eliminar al cliente')
+
         pass
 
     def actualizar_clientes(self):
         # Implementar la lógica para actualizar la tabla de clientes
+        clientes = self._cliente_service.get_all_clientes()
+
+        for row in self.tree.get_children():
+            self.tree.delete(row)
+
+        for cliente in clientes:
+            self.tree.insert('', tk.END, values=(cliente.id, cliente.cedula, cliente.nombre, cliente.telefono, cliente.direccion))
         pass
+
+    def on_cliente_selected(self, event) -> None:
+        selection = self.tree.selection()
+
+        if len(selection) == 0:
+            return
+
+        id = selection[0]
+        item = self.tree.item(id)
+
+        id = item["values"][0]
+        cedula = item["values"][1]
+        nombre = item["values"][2]
+        telefono = item["values"][3]
+        direccion = item["values"][4]
+
+        self.id_entry.delete(0, tk.END)
+        self.id_entry.insert(0, id)
+
+        self.cedula_entry.delete(0, tk.END)
+        self.cedula_entry.insert(0, cedula)
+
+        self.nombre_entry.delete(0, tk.END)
+        self.nombre_entry.insert(0, nombre)
+
+        self.telefono_entry.delete(0, tk.END)
+        self.telefono_entry.insert(0, telefono)
+
+        self.direccion_entry.delete(0, tk.END)
+        self.direccion_entry.insert(0, direccion)
+
+    def limpiar_campos(self):
+        self.id_entry.delete(0, tk.END)
+        self.cedula_entry.delete(0, tk.END)
+        self.nombre_entry.delete(0, tk.END)
+        self.telefono_entry.delete(0, tk.END)
+        self.direccion_entry.delete(0, tk.END)

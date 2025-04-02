@@ -1,5 +1,7 @@
 from tkinter import *
 import tkinter as tk
+
+from screens.UsersWindow import UsersWindow
 from ventas import Ventas
 from inventario import Inventario
 from PIL import Image, ImageTk
@@ -34,7 +36,7 @@ class Container(tk.Frame):
         self.show_frame(Ventas)
 
     def inventario(self):
-        
+
         self.show_frame(Inventario)
 
     def clientes(self): # Método para mostrar ClientesScreen
@@ -42,6 +44,13 @@ class Container(tk.Frame):
 
     def proveedores(self): # Método para mostrar ProveedoresScreen
         self.show_frame(ProveedoresScreen)
+
+    def usuarios(self):
+        if user().rol != 'admin':
+            return
+
+        users_window = UsersWindow()
+        users_window.mainloop()
 
     def widgets(self):
         frame1 = tk.Frame(self, bg="#F5F5F5")
@@ -59,6 +68,10 @@ class Container(tk.Frame):
 
         btnproveedores = Button(frame1, bg="#2196F3", fg="white", font="sans 14 bold", text="Proveedores", command=self.proveedores, bd=4, relief=RAISED) # Usar self.proveedores
         btnproveedores.place(x=650, y=100, width=140, height=50)
+
+        btnusers = Button(frame1, bg="#2196F3", fg="white", font="sans 14 bold", text="Usuarios",
+                                command=self.usuarios, bd=4, relief=RAISED)
+        btnusers.place(x=650, y=200, width=140, height=50)
 
         logout_button = Button(frame1, text="Cerrar sesión", command=self.controlador.logout)
         logout_button.place(x=680, y=350, width=100, height=30)

@@ -33,7 +33,7 @@ class UserRepository:
             if row is None:
                 return None
 
-            id = row[0]
+            id = Id(row[0])
             name = Name(row[1])
             password = Password.from_hash(row[2])
             dt = datetime.fromisoformat(row[3])
@@ -42,6 +42,48 @@ class UserRepository:
             user = User(id, name, password, dt, rol)
 
             return user
+
+    def find_all(self) -> list[User]:
+        with SqliteConnection.get_connection() as conn:
+            cursor = conn.cursor()
+
+            res = cursor.execute('select * from users')
+
+            rows = res.fetchall()
+
+            users = []
+
+            for row in rows:
+                id = row[0]
+                name = Name(row[1])
+                password = Password.from_hash(row[2])
+                dt = datetime.fromisoformat(row[3])
+                rol = row[4]
+
+                user = User(id, name, password, dt, rol)
+
+                users.append(user)
+
+            return users
+
+    def update(self, user: User):
+        with SqliteConnection.get_connection() as conn:
+
+            try:
+                cursor = conn.cursor()
+
+                res = cursor.execute('update users set name = ?, password = ?, created_at = ?, rol = ? where id = ?',
+                                     [
+                                         user.name.name,
+                                         user.password.hashed_pw,
+                                         user.created_at,
+                                         user.rol,
+                                         user.id.id,
+                                     ])
+
+                conn.commit()
+            except sqlite3.Error:
+                conn.rollback()
 
     def save(self, user: User):
 
@@ -73,3 +115,4 @@ class UserRepository:
                 conn.commit()
             except sqlite3.Error:
                 conn.rollback()
+
