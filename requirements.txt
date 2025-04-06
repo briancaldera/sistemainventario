@@ -1,3 +1,4 @@
 bcrypt==4.3.0
+peewee==3.17.9
 pillow==11.1.0
 ttkthemes==3.2.2
