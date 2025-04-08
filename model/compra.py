@@ -1,7 +1,7 @@
 from peewee import *
 
 from model.producto import Producto
-from model.proveedor import Proveedor
+from model.proveedor import ProveedorAR as Proveedor
 from decimal import Decimal
 from datetime import datetime
 from typing import TypedDict
@@ -28,11 +28,12 @@ class Compra(Model):
     def crear(numero_compra: str, proveedor: Proveedor, costo_total: Decimal,
               productos: list[ItemCompra]):
         # Start transaction here
-        with Compra.Meta.database.atomic() as trans:
+        conn = DB.get_connection()
+        with conn.atomic() as trans:
             compra = Compra.create(numero_compra=numero_compra, proveedor_id=proveedor.id, costo_total=costo_total,
                                    fecha=datetime.now())
-
             ingresos = []
+
 
             for item in productos:
                 ingreso = Ingreso.crear(compra, item['producto'], item['cantidad'], item['precio'])
@@ -54,6 +55,6 @@ class Ingreso(Model):
 
     @staticmethod
     def crear(compra: Compra, producto: Producto, cantidad: int, costo: Decimal):
-        with Ingreso.Meta.database.atomic() as trans:
-            return Ingreso.create(compra_id=compra.compra_id, producto_id=producto.producto_id, cantidad=cantidad,
-                                  costo=costo)
+        conn = DB.get_connection()
+        with conn.atomic() as trans:
+            return Ingreso.create(compra_id=compra, producto_id=producto, cantidad=cantidad, costo=costo)

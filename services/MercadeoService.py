@@ -1,6 +1,7 @@
 from db.database import Database
 from model.compra import Compra
 from model.producto import Producto
+from model.proveedor import ProveedorAR
 from model.venta import Venta
 from repository.ClienteRepository import ClienteRepository
 from repository.ProveedorRepository import ProveedorRepository
@@ -29,23 +30,31 @@ class MercadeoService:
         self.cliente_repository = ClienteRepository()
         self.proveedor_repository = ProveedorRepository()
 
+    def listar_compras(self) -> list[Compra]:
+        return Compra.select().order_by(Compra.fecha.desc())
+
+    def listar_ventas(self) -> list[Venta]:
+        return Venta.select().order_by(Venta.fecha.desc())
+
     def comprar(self, request: CompraRequest):
+
         conn = Database.get_connection()
         with conn.atomic() as trans:
             # Start transaction
             numero_compra = ''
 
-            proveedor = self.proveedor_repository.find(request.proveedor_id)
+            proveedor = ProveedorAR.select().where(ProveedorAR.id == request.proveedor_id).get()
 
             productos = []
 
             for item in request.lista_producto:
-                producto: Producto = Producto.select(Producto.producto_id == item['producto_id']).get()
+                producto: Producto = Producto.get_by_id(item['producto_id'])
 
                 producto.agregar(item['cantidad'])
 
                 productos.append(
                     {'producto': producto, 'cantidad': item['cantidad'], 'precio': producto.precio})
+
 
             Compra.crear(numero_compra, proveedor, Decimal(request.costo_total), productos)
 
@@ -62,9 +71,9 @@ class MercadeoService:
             productos = []
 
             for item in request.lista_producto:
-                producto: Producto = Producto.select(Producto.producto_id == item['producto_id']).get()
+                producto: Producto = Producto.get_by_id(item['producto_id'])
 
-                producto.agregar(item['cantidad'])
+                producto.retirar(item['cantidad'])
 
                 productos.append(
                     {'producto': producto, 'cantidad': item['cantidad'], 'precio': producto.precio})

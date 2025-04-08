@@ -27,7 +27,8 @@ class Venta(Model):
     def crear(numero_venta: str, cliente: Cliente, total_neto: Decimal, total_pagado: Decimal,
               productos: list[ItemVenta]):
         # Start transaction here
-        with Venta.Meta.database.atomic() as trans:
+        conn = DB.get_connection()
+        with conn.atomic() as trans:
             venta = Venta.create(numero_venta=numero_venta, cliente_id=cliente.id, total_neto=total_neto,
                                  total_pagado=total_pagado, fecha=datetime.now())
 
@@ -53,6 +54,7 @@ class Egreso(Model):
 
     @staticmethod
     def crear(venta: Venta, producto: Producto, cantidad: int, precio: Decimal):
-        with Egreso.Meta.database.atomic() as trans:
-            return Egreso.create(venta_id=venta.venta_id, producto_id=producto.producto_id, cantidad=cantidad,
+        conn = DB.get_connection()
+        with conn.atomic() as trans:
+            return Egreso.create(venta_id=venta.venta_id, producto_id=producto, cantidad=cantidad,
                                  precio=precio)
