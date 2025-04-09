@@ -41,7 +41,6 @@ class MercadeoService:
         conn = Database.get_connection()
         with conn.atomic() as trans:
             # Start transaction
-            numero_compra = ''
 
             proveedor = ProveedorAR.select().where(ProveedorAR.id == request.proveedor_id).get()
 
@@ -52,11 +51,9 @@ class MercadeoService:
 
                 producto.agregar(item['cantidad'])
 
-                productos.append(
-                    {'producto': producto, 'cantidad': item['cantidad'], 'precio': producto.precio})
+                productos.append({'producto': producto, 'cantidad': item['cantidad'], 'precio': producto.precio})
 
-
-            Compra.crear(numero_compra, proveedor, Decimal(request.costo_total), productos)
+            Compra.crear(proveedor, Decimal(request.costo_total), productos)
 
         # End transaction
 
@@ -74,8 +71,7 @@ class MercadeoService:
 
                 producto.retirar(item['cantidad'])
 
-                productos.append(
-                    {'producto': producto, 'cantidad': item['cantidad'], 'precio': producto.precio})
+                productos.append({'producto': producto, 'cantidad': item['cantidad'], 'precio': producto.precio})
 
             Venta.crear(cliente, Decimal(request.total_neto), Decimal(request.total_pagado), productos)
 
