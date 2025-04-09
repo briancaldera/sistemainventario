@@ -124,7 +124,7 @@ class Inventario(tk.Frame):
         for item in self.tre.get_children():
             self.tre.delete(item)
 
-        consulta = "SELECT * FROM inventario ORDER BY id DESC"
+        consulta = "SELECT * FROM inventario ORDER BY producto_id DESC"
         resultado = self.eje_consulta(consulta)
         for elem in resultado:
             try:

@@ -1,6 +1,6 @@
 from peewee import SqliteDatabase as PeeweeSqlite, Database as PeeweeDatabase
 
-use_in_memory = True
+use_in_memory = False
 
 
 class Database:
