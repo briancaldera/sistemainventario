@@ -64,7 +64,6 @@ class MercadeoService:
         conn = Database.get_connection()
         with conn.atomic() as trans:
             # Start transaction
-            numero_venta = ''
 
             cliente = self.cliente_repository.find(request.cliente_id)
 
@@ -78,6 +77,6 @@ class MercadeoService:
                 productos.append(
                     {'producto': producto, 'cantidad': item['cantidad'], 'precio': producto.precio})
 
-            Venta.crear(numero_venta, cliente, Decimal(request.total_neto), Decimal(request.total_pagado), productos)
+            Venta.crear(cliente, Decimal(request.total_neto), Decimal(request.total_pagado), productos)
 
             # End transaction

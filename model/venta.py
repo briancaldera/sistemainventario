@@ -1,6 +1,6 @@
 from peewee import *
 
-from model.cliente import Cliente
+from model.cliente import Cliente, ClienteAR
 from decimal import Decimal
 
 from model.producto import Producto
@@ -13,8 +13,8 @@ ItemVenta = TypedDict('ItemVenta', {'producto': Producto, 'cantidad': int, 'prec
 
 class Venta(Model):
     venta_id = AutoField()
-    numero_venta = CharField()
-    cliente_id = ForeignKeyField(Cliente, object_id_name='id')
+    numero_factura = IntegerField(unique=True)
+    cliente_id = ForeignKeyField(ClienteAR, object_id_name='id', backref='ventas')
     total_neto = DecimalField()
     total_pagado = DecimalField()
     fecha = DateField()
@@ -24,12 +24,17 @@ class Venta(Model):
         database = DB.get_connection()
 
     @staticmethod
-    def crear(numero_venta: str, cliente: Cliente, total_neto: Decimal, total_pagado: Decimal,
+    def crear(cliente: Cliente, total_neto: Decimal, total_pagado: Decimal,
               productos: list[ItemVenta]):
         # Start transaction here
+
+        max_factura = Venta.select(Venta.numero_factura).order_by(Venta.numero_factura.desc()).limit(1)
+
+        siguiente_numero_factura = max_factura.get().numero_factura + 1 if max_factura.exists() else 1
+
         conn = DB.get_connection()
         with conn.atomic() as trans:
-            venta = Venta.create(numero_venta=numero_venta, cliente_id=cliente.id, total_neto=total_neto,
+            venta = Venta.create(numero_factura=siguiente_numero_factura, cliente_id=cliente.id, total_neto=total_neto,
                                  total_pagado=total_pagado, fecha=datetime.now())
 
             egresos = []
@@ -43,8 +48,8 @@ class Venta(Model):
 
 class Egreso(Model):
     egreso_id = AutoField()
-    venta_id = ForeignKeyField(Venta,)
-    producto_id = ForeignKeyField(Producto,)
+    venta_id = ForeignKeyField(Venta,backref='egresos')
+    producto_id = ForeignKeyField(Producto, backref='egresos')
     cantidad = IntegerField()
     precio = DecimalField()
 
