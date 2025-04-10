@@ -1,19 +1,39 @@
 import sqlite3
-from tkinter import *
 import tkinter as tk
+from decimal import Decimal
+from tkinter import *
 from tkinter import ttk, messagebox
+from typing import TypedDict
+
+from model.cliente import ClienteAR
+from model.compra import Compra
+from model.producto import Producto
+from model.proveedor import Proveedor, ProveedorAR
+from model.venta import Venta, Egreso
+from screens.DetallesWindow import DetallesWindow
+from services.MercadeoService import MercadeoService
+from services.ProductoService import ProductoService
+
+Cesta = list[TypedDict('Cesta', {'producto': Producto, 'cantidad': int})]
+
 
 class Ventas(tk.Frame):
-
     db_name = "database.db"
 
     def __init__(self, parent, controller):
         super().__init__(parent)
+
+        self.catalogo: list[Producto] = []
+        self.cesta: Cesta = []
+        self.cliente: ClienteAR | None = None
+
         self.numero_factura_actual = self.obtener_numero_factura_actual()
+        self.productos_service = ProductoService()
+        self.mercadeo_service = MercadeoService()
+
         self.widgets()
         self.mostrar_numero_factura()
         self.controller = controller
-
 
     def widgets(self):
 
@@ -35,15 +55,16 @@ class Ventas(tk.Frame):
         label_numero_factura.place(x=10, y=5)
         self.numero_factura = tk.StringVar()
 
-        self.entry_numero_factura = ttk.Entry(Lblframe, textvariable=self.numero_factura, state="readonly", font=("Arial", 12))
+        self.entry_numero_factura = ttk.Entry(Lblframe, textvariable=self.numero_factura, state="readonly",
+                                              font=("Arial", 12))
         self.entry_numero_factura.place(x=100, y=5, width=80)
 
         label_nombre = tk.Label(Lblframe, text="productos: ", font=("Arial", 12), bg="#C6D9E3", fg="black")
         label_nombre.place(x=200, y=12)
 
-        self.entry_nombre = ttk.Combobox    (Lblframe, font=("Arial", 12), state="readonly")
+        self.entry_nombre = ttk.Combobox(Lblframe, font=("Arial", 12), state="readonly")
         self.entry_nombre.place(x=280, y=10, width=180)
-        self.cargar_productos()
+        self.refrescar_productos()
 
         label_valor = tk.Label(Lblframe, text="Precio: ", font=("Arial", 12), bg="#C6D9E3")
         label_valor.place(x=470, y=12)
@@ -67,7 +88,8 @@ class Ventas(tk.Frame):
         Scrol_x = Scrollbar(treframe, orient=HORIZONTAL)
         Scrol_x.pack(side=BOTTOM, fill=X)
 
-        self.tree = ttk.Treeview(treframe, columns=("Producto", "Precio", "Cantidad", "subtotal"), show="headings", yscrollcommand=Scrol_y.set, xscrollcommand=Scrol_x.set)
+        self.tree = ttk.Treeview(treframe, columns=("Producto", "Precio", "Cantidad", "subtotal"), show="headings",
+                                 yscrollcommand=Scrol_y.set, xscrollcommand=Scrol_x.set)
         Scrol_y.config(command=self.tree.yview)
         Scrol_x.config(command=self.tree.xview)
 
@@ -86,73 +108,109 @@ class Ventas(tk.Frame):
         lblframe1 = LabelFrame(frame2, text="opciones", font=("Arial", 12), bg="#C6D9E3")
         lblframe1.place(x=10, y=380, width=1060, height=100)
 
-        boton_agregar = Button(lblframe1, text="Agregar articulo", font=("Arial", 12), bg="#f4b400", command=self.registrar)
+        boton_agregar = Button(lblframe1, text="Agregar articulo", font=("Arial", 12), bg="#f4b400",
+                               command=self.agregar_a_la_cesta)
         boton_agregar.place(x=50, y=10, width=240, height=50)
 
         boton_pagar = Button(lblframe1, text="Pagar", font=("Arial", 12), bg="#f4b400", command=self.abrir_ventana_pago)
         boton_pagar.place(x=400, y=10, width=240, height=50)
 
-        boton_facturas = Button(lblframe1, text="Ver Facturas", font=("Arial", 12), bg="#f4b400", command=self.abrir_ventana_factura)
+        boton_facturas = Button(lblframe1, text="Ver Facturas", font=("Arial", 12), bg="#f4b400",
+                                command=self.abrir_ventana_factura)
         boton_facturas.place(x=750, y=10, width=240, height=50)
 
         self.label_suma_total = tk.Label(frame2, text="Total: ", font=("Arial", 12), bg="#C6D9E3")
         self.label_suma_total.place(x=360, y=335)
 
-    def cargar_productos(self):
-        try:
-            conn = sqlite3.connect(self.db_name)
-            c = conn.cursor()
-            c.execute("SELECT nombre FROM inventario")
-            productos = c.fetchall()
-            self.entry_nombre["values"] = [producto[0] for producto in productos]
-            if not productos:
-                print("No hay productos en la base de datos")
-                conn.close()
-        except sqlite3.Error as e:
-            print("error al cargar productos", e)     
+        self.cliente_info_frame = tk.Frame(treframe, bg="#C6D9E3")
+        # self.cliente_info_frame.pack(fill=BOTH)
 
-    def actualizar_precio(self,event):
-        nombre_producto = self.entry_nombre.get() 
-        try:
-            conn = sqlite3.connect(self.db_name)
-            c = conn.cursor()
-            c.execute("SELECT precio FROM inventario WHERE nombre = ?", (nombre_producto,))
-            precio = c.fetchone()
-            if (precio):
-                self.entry_valor.config(state="normal")
-                self.entry_valor.delete(0, tk.END)
-                self.entry_valor.insert(0, precio[0])
-                self.entry_valor.config(state="readonly")
+        self.cliente_cedula_entry = Entry(self.cliente_info_frame, font=("Arial", 12))
+        self.cliente_cedula_entry.pack(fill=BOTH)
+
+        self.buscar_cedula = Button(self.cliente_info_frame, text='Buscar', font=("Arial", 12), bg="white",
+                                    command=self.buscar_cliente)
+        self.buscar_cedula.pack(fill=BOTH)
+
+
+        self.cliente_nombre_label = tk.Label(self.cliente_info_frame, text="Nombre: ", font=("Arial", 12), bg="#C6D9E3")
+        self.cliente_nombre_label.pack(fill=BOTH)
+
+        self.cliente_direccion_label = tk.Label(self.cliente_info_frame, text="Direccion: ", font=("Arial", 12),
+                                                bg="#C6D9E3")
+        self.cliente_direccion_label.pack(fill=BOTH)
+
+        self.cliente_telefono_label = tk.Label(self.cliente_info_frame, text="Telefono: ", font=("Arial", 12),
+                                               bg="#C6D9E3")
+        self.cliente_telefono_label.pack(fill=BOTH)
+        self.cliente_info_frame.place(x=550, y=0, width=300, height=200)
+
+
+    def buscar_cliente(self):
+        cedula = self.cliente_cedula_entry.get()
+        if cedula:
+            cliente = ClienteAR.select().where(ClienteAR.cedula == cedula).get_or_none()
+            if cliente:
+                self.cliente = cliente
+                self.refrescar_cliente()
             else:
-                self.entry_valor.config(state="normal")
-                self.entry_valor.delete(0, tk.END)
-                self.entry_valor.insert(0, "precio no disponible")
-                self.entry_valor.config(state="readonly")
-        except sqlite3.Error as e:
-            messagebox.showerror("Error", f"Error al obtener el precio: {e}")
-        finally:
-            conn.close()
+                messagebox.showerror("Error", "Cliente no encontrado")
+        else:
+            messagebox.showerror("Error", "Por favor ingrese una cedula")
+
+    def refrescar_cliente(self):
+        if self.cliente:
+
+            self.cliente_nombre_label.config(text=f"Nombre: {self.cliente.nombre}")
+            self.cliente_direccion_label.config(text=f"Direccion: {self.cliente.direccion}")
+            self.cliente_telefono_label.config(text=f"Telefono: {self.cliente.telefono}")
+        else:
+
+            self.cliente_nombre_label.config(text=f"Nombre: ")
+            self.cliente_direccion_label.config(text=f"Direccion: ")
+            self.cliente_telefono_label.config(text=f"Telefono: ")
+
+    def refrescar_productos(self):
+        self.catalogo = self.productos_service.listar()
+        self.entry_nombre["values"] = [producto.nombre for producto in self.catalogo]
+
+    def actualizar_precio(self, event):
+        nombre_producto = self.entry_nombre.get()
+
+        producto = [x for x in self.catalogo if x.nombre == nombre_producto][0]
+        precio = producto.precio
+
+        self.entry_valor.config(state="normal")
+        self.entry_valor.delete(0, tk.END)
+        self.entry_valor.insert(0, precio)
+        self.entry_valor.config(state="readonly")
 
     def actualizar_total(self):
         total = 0.0
         for child in self.tree.get_children():
             subtotal = float(self.tree.item(child, "values")[3])
             total += subtotal
-        self.label_suma_total.config(text=f"Total: {total}") 
+        self.label_suma_total.config(text=f"Total: {total}")
 
-    def registrar(self):
+    def agregar_a_la_cesta(self):
         producto = self.entry_nombre.get()
         precio = self.entry_valor.get()
         cantidad = self.entry_cantidad.get()
 
-        if producto and precio and cantidad: 
+        if producto and precio and cantidad:
             try:
                 cantidad = int(cantidad)
-                if not self.verificar_existencias(producto, cantidad):
-                    messagebox.showerror("Error", "No hay suficientes existencias")
+
+                # check producto stock and show message if not enough stock
+                producto_encontrado = [x for x in self.catalogo if x.nombre == producto][0]
+                if producto_encontrado.existencia < cantidad:
+                    messagebox.showerror("Error", f"No hay suficientes existencias de {producto}")
                     return
+
                 precio = float(precio)
                 subtotal = precio * cantidad
+
+                self.cesta.append({'producto': producto_encontrado, 'cantidad': cantidad})
 
                 self.tree.insert("", "end", values=(producto, f"{precio: .2f}", cantidad, f"{subtotal: .2f}"))
 
@@ -164,24 +222,9 @@ class Ventas(tk.Frame):
 
                 self.actualizar_total()
             except ValueError:
-                messagebox.showerror("Error", "Cantidad no valida")    
+                messagebox.showerror("Error", "Cantidad no valida")
         else:
-            messagebox.showerror("Error", "Por favor complete los campos")    
-
-    def verificar_existencias(self, nombre_producto, cantidad):
-        try:
-            conn = sqlite3.connect(self.db_name)
-            c = conn.cursor()
-            c.execute("SELECT existencia FROM inventario WHERE nombre = ?", (nombre_producto,))
-            stock = c.fetchone()
-            if stock and stock[0] >= cantidad:
-                return True
-            return False
-        except sqlite3.Error as e:
-            print("Error al verificar existencias", e)
-            return False
-        finally:
-            conn.close()
+            messagebox.showerror("Error", "Por favor complete los campos")
 
     def obtener_total(self):
         total = 0.0
@@ -189,12 +232,16 @@ class Ventas(tk.Frame):
             subtotal = float(self.tree.item(child, "values")[3])
             total += subtotal
         return total
-    
+
     def abrir_ventana_pago(self):
+        if not self.cliente:
+            messagebox.showerror("Error", "Por favor seleccione un cliente")
+            return
+
         if not self.tree.get_children():
             messagebox.showerror("Error", "No hay productos para pagar")
             return
-        
+
         total = self.obtener_total()
         ventana_pago = tk.Toplevel(self)
         ventana_pago.title("Realizar Pago")
@@ -202,9 +249,9 @@ class Ventas(tk.Frame):
         ventana_pago.resizable(False, False)
         ventana_pago.config(bg="#C6D9E3")
 
-        label_total = tk.Label(ventana_pago, text=f"Total a pagar: {self.obtener_total()}", font=("Arial", 12), bg="#C6D9E3")
+        label_total = tk.Label(ventana_pago, text=f"Total a pagar: {self.obtener_total()}", font=("Arial", 12),
+                               bg="#C6D9E3")
         label_total.place(x=70, y=20)
-
 
         label_cantidad_pagada = tk.Label(ventana_pago, text="Cantidad pagada: ", font=("Arial", 12), bg="#C6D9E3")
         label_cantidad_pagada.place(x=100, y=90)
@@ -226,72 +273,71 @@ class Ventas(tk.Frame):
             except ValueError:
                 messagebox.showerror("Error", "Cantidad no valida")
 
-        boton_calcular = tk.Button(ventana_pago, text="Calcular Cambio", font=("Arial", 12), bg="white", command=calcular_cambio)
+        boton_calcular = tk.Button(ventana_pago, text="Calcular Cambio", font=("Arial", 12), bg="white",
+                                   command=calcular_cambio)
         boton_calcular.place(x=100, y=240, width=240, height=40)
 
-        boton_pagar = tk.Button(ventana_pago, text="Pagar", font=("Arial", 12), bg="white", command=lambda: self.pagar(ventana_pago, entry_cantidad_pagada, label_cambio))
+        boton_pagar = tk.Button(ventana_pago, text="Pagar", font=("Arial", 12), bg="white",
+                                command=lambda: self.pagar(ventana_pago, entry_cantidad_pagada, label_cambio))
         boton_pagar.place(x=100, y=300, width=240, height=40)
 
     def pagar(self, ventana_pago, entry_cantidad_pagada, label_cambio):
+        cantidad_pagada = entry_cantidad_pagada.get()
+        total = self.obtener_total()
+        cambio = Decimal(cantidad_pagada) - Decimal(total)
+
+        if cambio < 0:
+            messagebox.showerror("Error", "La cantidad pagada es insuficiente")
+            return
+
+        lista_productos = []
+
+        for item in self.cesta:
+            producto = {
+                'producto_id': item['producto'].producto_id,
+                'cantidad': item['cantidad']
+            }
+
+            lista_productos.append(producto)
+
+        request = MercadeoService.VentaRequest(
+            cliente_id=self.cliente.id,
+            total_neto=str(total),
+            total_pagado=cantidad_pagada,
+            lista_producto=lista_productos
+        )
+
         try:
-            cantidad_pagada = float(entry_cantidad_pagada.get())
-            total = self.obtener_total()
-            cambio = cantidad_pagada - total
-            if cambio < 0:
-                messagebox.showerror("Error", "La cantidad pagada es insuficiente")
-                return
-            
-            conn = sqlite3.connect(self.db_name)
-            c = conn.cursor()
-            try:
-                for child in self.tree.get_children():
-                    item = self.tree.item(child, "values")
-                    nombre_producto = item[0]
-                    cantidad_vendida = int(item[2])
-                    if not self.verificar_existencias(nombre_producto, cantidad_vendida):
-                        messagebox.showerror("Error", "No hay suficientes existencias: {nombre_producto}")
-                        return
-                    
-                    c.execute("INSERT  INTO ventas (factura, nombre_articulo, valor_articulo, cantidad, subtotal) VALUES (?, ?, ?, ?, ?)", 
-                              (self.numero_factura_actual, nombre_producto, float(item[1]), cantidad_vendida, float(item[3])))
-                    c.execute("UPDATE inventario SET existencia = existencia - ? WHERE nombre = ?", (cantidad_vendida, nombre_producto))
-                conn.commit()
-                messagebox.showinfo("Venta", "Venta realizada con exito")
+            self.mercadeo_service.vender(request)
+            messagebox.showinfo('Venta registrada', 'Venta registrada exitosamente')
+            self.refrescar_productos()
 
-                self.numero_factura_actual += 1
-                self.mostrar_numero_factura()
+        except Exception as e:
+            messagebox.showerror('Error', 'Ocurrió un error al intentar registrar la venta')
+            print(e)
 
-                for child in self.tree.get_children():
-                    self.tree.delete(child)
-                self.label_suma_total.config(text="Total: 0.0")
+            self.numero_factura_actual += 1
+            self.mostrar_numero_factura()
 
-                ventana_pago.destroy()
-            except sqlite3.Error as e:
-                conn.rollback()
-                messagebox.showerror("Error", f"Error al realizar la venta: {e}")
-        except ValueError:
-            messagebox.showerror("Error", "Cantidad no valida")
+            for child in self.tree.get_children():
+                self.tree.delete(child)
+            self.label_suma_total.config(text="Total: 0.0")
+
+            ventana_pago.destroy()
 
     def obtener_numero_factura_actual(self):
-        conn = sqlite3.connect(self.db_name)
-        c = conn.cursor()
-        try :
-            c.execute("SELECT MAX(factura) FROM ventas")
-            max_factura = c.fetchone()[0]
-            if max_factura :
-                return max_factura + 1
-            else:
-                return 1
-        except sqlite3.Error as e:
-            messagebox.showerror("Error", f"Error al obtener el número de factura: {e}")
-            return 1
-        finally:
-            conn.close()
 
-    def mostrar_numero_factura(self):  
-        self.numero_factura.set(self.numero_factura_actual) 
+        max_factura = Venta.select(Venta.numero_factura).order_by(Venta.numero_factura.desc()).limit(1)
+
+        return max_factura.get().numero_compra + 1 if max_factura.exists() else 1
+
+    def mostrar_numero_factura(self):
+        self.numero_factura.set(self.numero_factura_actual)
 
     def abrir_ventana_factura(self):
+
+        VentanaVentas(self)
+        return
         ventana_facturas = Toplevel(self)
         ventana_facturas.title("Factura")
         ventana_facturas.geometry("800x500")
@@ -310,7 +356,8 @@ class Ventas(tk.Frame):
         Scrol_x = Scrollbar(treframe, orient=HORIZONTAL)
         Scrol_x.pack(side=BOTTOM, fill=X)
 
-        tree_facturas = ttk.Treeview(treframe, columns=("ID", "Factura", "Producto", "Precio", "cantidad", "Subtotal"), show="headings", yscrollcommand=Scrol_y.set, xscrollcommand=Scrol_x.set)
+        tree_facturas = ttk.Treeview(treframe, columns=("ID", "Factura", "Producto", "Precio", "cantidad", "Subtotal"),
+                                     show="headings", yscrollcommand=Scrol_y.set, xscrollcommand=Scrol_x.set)
         Scrol_y.config(command=tree_facturas.yview)
         Scrol_x.config(command=tree_facturas.xview)
 
@@ -333,14 +380,95 @@ class Ventas(tk.Frame):
         self.cargar_facturas(tree_facturas)
 
     def cargar_facturas(self, tree):
-            try:
-                conn = sqlite3.connect(self.db_name)
-                c = conn.cursor()
-                c.execute("SELECT * FROM ventas")
-                facturas = c.fetchall()
-                for factura in facturas:
-                    tree.insert("", "end", values=factura)   
-                conn.close()
-            except sqlite3.Error as e:
-                messagebox.showerror("Error", f"Error al cargar facturas: {e}")     
+        try:
+            conn = sqlite3.connect(self.db_name)
+            c = conn.cursor()
+            c.execute("SELECT * FROM ventas")
+            facturas = c.fetchall()
+            for factura in facturas:
+                tree.insert("", "end", values=factura)
+            conn.close()
+        except sqlite3.Error as e:
+            messagebox.showerror("Error", f"Error al cargar facturas: {e}")
 
+
+class VentanaVentas(tk.Toplevel):
+    def __init__(self, parent):
+        super().__init__(parent)
+
+        self.mercadeo_service = MercadeoService()
+        self.ventas: list[Ventas] = []
+        self.title("Ventas")
+        self.geometry("800x500")
+        self.resizable(False, False)
+        self.config(bg="#C6D9E3")
+
+        facturas = Label(self, bg="#C6D9E3", text="Facturas registradas", font=("Arial", 20))
+        facturas.place(x=150, y=15)
+
+        treframe = Frame(self, bg="#C6D9E3")
+        treframe.place(x=10, y=100, width=780, height=380)
+
+        Scrol_y = Scrollbar(treframe, orient=VERTICAL)
+        Scrol_y.pack(side=RIGHT, fill=Y)
+
+        Scrol_x = Scrollbar(treframe, orient=HORIZONTAL)
+        Scrol_x.pack(side=BOTTOM, fill=X)
+
+        tree_facturas = ttk.Treeview(treframe, columns=("ID", "Factura", "Cliente", "Precio", "Subtotal", 'Fecha'),
+                                     show="headings", yscrollcommand=Scrol_y.set, xscrollcommand=Scrol_x.set)
+
+        self.tree_ventas = tree_facturas
+        Scrol_y.config(command=tree_facturas.yview)
+        Scrol_x.config(command=tree_facturas.xview)
+
+        tree_facturas.heading("#1", text="ID")
+        tree_facturas.heading("#2", text="Factura")
+        tree_facturas.heading("#3", text="Cliente")
+        tree_facturas.heading("#4", text="Precio")
+        tree_facturas.heading("#5", text="Subtotal")
+        tree_facturas.heading("#6", text="Fecha")
+
+        tree_facturas.column("ID", width=70, anchor="center")
+        tree_facturas.column("Factura", width=100, anchor="center")
+        tree_facturas.column("Cliente", width=200, anchor="center")
+        tree_facturas.column("Precio", width=130, anchor="center")
+        tree_facturas.column("Subtotal", width=130, anchor="center")
+        tree_facturas.column("Fecha", width=130, anchor="center")
+
+        tree_facturas.pack(fill=BOTH, expand=True)
+
+        tree_facturas.bind('<<TreeviewSelect>>', self.on_venta_seleccion)
+        self.refrescar_ventas()
+
+    def refrescar_ventas(self):
+        ventas = self.mercadeo_service.listar_ventas()
+
+        for item in self.tree_ventas.get_children():
+            self.tree_ventas.delete(item)
+
+        for venta in ventas:
+            # Insert each venta in the self.tree_ventas considering the columns
+
+            cliente = ClienteAR.get_by_id(venta.cliente_id)
+
+            self.tree_ventas.insert("", 0, text=venta.venta_id, values=(
+                venta.venta_id, venta.numero_factura, cliente.nombre, venta.total_neto, venta.total_pagado,
+                venta.fecha))
+
+    def on_venta_seleccion(self, event):
+
+        seleccion = self.tree_ventas.selection()
+
+        if len(seleccion) == 0:
+            return
+
+        index = seleccion[0]
+
+        item = self.tree_ventas.item(index)
+
+        venta_id = item['values'][0]
+
+        venta = Venta.get_by_id(venta_id)
+
+        DetallesWindow(self, venta)

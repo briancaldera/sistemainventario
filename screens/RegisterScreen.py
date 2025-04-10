@@ -1,11 +1,15 @@
 import tkinter as tk
 import tkinter.ttk as ttk
+from tkinter.messagebox import showerror, showinfo
 
-class RegisterScreen(tk.Frame):
-    def __init__(self, parent, controller):
-        super().__init__(parent, background='#E0F2F7')
-        self.controller = controller
+from auth.AuthManager import AuthManager
+
+
+class RegisterScreen(tk.Tk):
+    def __init__(self):
+        super().__init__()
         self.widgets()
+        self.auth = AuthManager.get_instance()
 
     def widgets(self):
         # Frame para el título (frame2)
@@ -32,11 +36,14 @@ class RegisterScreen(tk.Frame):
         self.register_button = ttk.Button(frame1, text='Registrar', command=self.register_user)
         self.register_button.place(relx=0.5, y=110, anchor='center')
 
-        self.user_exists_button = ttk.Button(frame1, text='Ya tengo usuario',
-                                            command=lambda: self.controller.show_frame('LoginScreen'))
-        self.user_exists_button.place(relx=0.5, y=160, anchor='center')
 
     def register_user(self):
         username = self.username_entry.get()
         password = self.password_entry.get()
-        self.controller.register_user(username, password)
+
+        try:
+            self.auth.register_user(username, password)
+            showinfo('Usuario registrado', 'Usuario registrado exitosamente')
+        except Exception as e:
+            print(e)
+            showerror('Error', 'Ocurrió un error al intentar registrar al usuario')

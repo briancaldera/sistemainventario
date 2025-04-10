@@ -2,6 +2,8 @@ import tkinter as tk
 from tkinter import ttk
 from tkinter import messagebox
 
+from screens.RegisterScreen import RegisterScreen
+
 
 class UsersScreen(tk.Frame):
     def __init__(self, parent, controller):
@@ -54,6 +56,13 @@ class UsersScreen(tk.Frame):
         self.tree.column("Nombre de usuario", anchor="center")
         self.tree.column("Fecha de registro", anchor="center")
         self.tree.column("Rol", anchor="center")
+
+        self.register_user_button = tk.Button(self, text='Registrar usuario', command=self.show_register_user_screen)
+        self.register_user_button.place(x=200, y=600)
+
+    def show_register_user_screen(self):
+        register_user_screen = RegisterScreen()
+        register_user_screen.mainloop()
 
     def change_user_role(self, event):
         username = self.username.get()

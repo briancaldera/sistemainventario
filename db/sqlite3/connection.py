@@ -1,5 +1,7 @@
 import sqlite3
 
+from db.database import Database
+
 
 class SqliteConnection:
     """
@@ -8,12 +10,10 @@ class SqliteConnection:
     De esta manera, cualquier cambio que surja, solo tendrá que hacerse acá.
     """
 
-    db_name = "database.db"
-
     @staticmethod
     def get_connection() -> sqlite3.Connection:
         """
         Obtiene una conexión a la base de datos.
         :return: sqlite3.Connection
         """
-        return sqlite3.connect(SqliteConnection.db_name)
+        return Database.get_connection().connection()
