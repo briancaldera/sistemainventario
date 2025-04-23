@@ -13,6 +13,7 @@ from model.venta import Venta, Egreso
 from screens.DetallesWindow import DetallesWindow
 from services.MercadeoService import MercadeoService
 from services.ProductoService import ProductoService
+from services.ReferenciaService import ReferenciaService
 
 Cesta = list[TypedDict('Cesta', {'producto': Producto, 'cantidad': int})]
 
@@ -26,6 +27,9 @@ class Ventas(tk.Frame):
         self.catalogo: list[Producto] = []
         self.cesta: Cesta = []
         self.cliente: ClienteAR | None = None
+
+        self.referencia_service = ReferenciaService()
+        self.referencia = self.referencia_service.conseguir_ultima_referencia()
 
         self.numero_factura_actual = self.obtener_numero_factura_actual()
         self.productos_service = ProductoService()
@@ -119,6 +123,14 @@ class Ventas(tk.Frame):
                                 command=self.abrir_ventana_factura)
         boton_facturas.place(x=750, y=10, width=240, height=50)
 
+        self.label_total_bolivares = tk.Label(frame2, text="Total: ", font=("Arial", 12), bg="#C6D9E3")
+        self.label_total_bolivares.place(x=460, y=335)
+
+        self.label_referencia = tk.Label(frame2,
+                                         text=f"Referencia: {self.referencia.valor if self.referencia is not None else 'Sin referencia'}",
+                                         font=("Arial", 12), bg="#C6D9E3")
+        self.label_referencia.place(x=260, y=335)
+
         self.label_suma_total = tk.Label(frame2, text="Total: ", font=("Arial", 12), bg="#C6D9E3")
         self.label_suma_total.place(x=360, y=335)
 
@@ -192,6 +204,12 @@ class Ventas(tk.Frame):
             total += subtotal
         self.label_suma_total.config(text=f"Total: {total}")
 
+        if self.referencia is None:
+            self.label_total_bolivares.config(text=f'Total: Sin referencia')
+        else:
+            self.label_total_bolivares.config(text=f'Total: {Decimal(str(total)) * self.referencia.valor}')
+
+
     def agregar_a_la_cesta(self):
         producto = self.entry_nombre.get()
         precio = self.entry_valor.get()
@@ -249,9 +267,23 @@ class Ventas(tk.Frame):
         ventana_pago.resizable(False, False)
         ventana_pago.config(bg="#C6D9E3")
 
-        label_total = tk.Label(ventana_pago, text=f"Total a pagar: {self.obtener_total()}", font=("Arial", 12),
-                               bg="#C6D9E3")
-        label_total.place(x=70, y=20)
+        total = self.obtener_total()
+        ref = self.referencia
+
+        label_referencia = tk.Label(ventana_pago,
+                                    text=f"Referencia: {ref.valor if ref is not None else 'Sin referencia'}",
+                                    font=("Arial", 12),
+                                    bg="#C6D9E3")
+        label_referencia.place(x=70, y=10)
+
+        label_total = tk.Label(ventana_pago, text=f"Total a pagar: {total}", font=("Arial", 12), bg="#C6D9E3")
+        label_total.place(x=70, y=30)
+
+        label_total_bolivares = tk.Label(ventana_pago,
+                                         text=f"Total a pagar en Bolívares: {Decimal(str(total)) * ref.valor if ref is not None else 'Sin referencia'}",
+                                         font=("Arial", 12),
+                                         bg="#C6D9E3")
+        label_total_bolivares.place(x=70, y=60)
 
         label_cantidad_pagada = tk.Label(ventana_pago, text="Cantidad pagada: ", font=("Arial", 12), bg="#C6D9E3")
         label_cantidad_pagada.place(x=100, y=90)
@@ -304,7 +336,8 @@ class Ventas(tk.Frame):
             cliente_id=self.cliente.id,
             total_neto=str(total),
             total_pagado=cantidad_pagada,
-            lista_producto=lista_productos
+            lista_producto=lista_productos,
+            referencia_id = self.referencia.referencia_id
         )
 
         try:
