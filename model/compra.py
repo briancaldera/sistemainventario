@@ -7,6 +7,7 @@ from peewee import *
 from db.database import Database as DB
 from model.producto import Producto
 from model.proveedor import ProveedorAR as Proveedor
+from model.referencia import Referencia
 
 ItemCompra = TypedDict('ItemCompra', {'producto': Producto, 'cantidad': int, 'precio': Decimal})
 
@@ -16,6 +17,7 @@ class Compra(Model):
     numero_compra = IntegerField(unique=True)
     proveedor_id = ForeignKeyField(Proveedor, object_id_name='id')
     costo_total = DecimalField()
+    referencia_id = ForeignKeyField(Referencia)
     fecha = DateField()
 
     ingresos = []
@@ -25,7 +27,7 @@ class Compra(Model):
         database = DB.get_connection()
 
     @staticmethod
-    def crear(proveedor: Proveedor, costo_total: Decimal, productos: list[ItemCompra]):
+    def crear(proveedor: Proveedor, costo_total: Decimal, productos: list[ItemCompra], referencia: Referencia):
         # Start transaction here
 
         max_compra = Compra.select(Compra.numero_compra).order_by(Compra.numero_compra.desc()).limit(1)
@@ -35,7 +37,7 @@ class Compra(Model):
         conn = DB.get_connection()
         with conn.atomic() as trans:
             compra = Compra.create(numero_compra=numero_compra, proveedor_id=proveedor.id, costo_total=costo_total,
-                                   fecha=datetime.now())
+                                   fecha=datetime.now(), referencia_id=referencia.referencia_id)
             ingresos = []
 
             for item in productos:
