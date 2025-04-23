@@ -60,8 +60,8 @@ class ClientesScreen(tk.Frame):
                                                                                          height=40)
         ttk.Button(lblframe_cliente, text="Editar", command=self.editar_cliente).place(x=80, y=310, width=240,
                                                                                        height=40)
-        ttk.Button(lblframe_cliente, text="Eliminar", command=self.eliminar_cliente).place(x=80, y=370, width=240,
-                                                                                           height=40)
+        # ttk.Button(lblframe_cliente, text="Eliminar", command=self.eliminar_cliente).place(x=80, y=370, width=240,
+        #                                                                                    height=40)
 
         # Treeview para la tabla de clientes
         treframe = tk.Frame(frame2, bg="white")

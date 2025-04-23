@@ -53,8 +53,8 @@ class ProveedoresScreen(tk.Frame):
                                                                                              height=40)
         ttk.Button(lblframe_proveedor, text="Editar", command=self.editar_proveedor).place(x=80, y=260, width=240,
                                                                                            height=40)
-        ttk.Button(lblframe_proveedor, text="Eliminar", command=self.eliminar_proveedor).place(x=80, y=320, width=240,
-                                                                                               height=40)
+        # ttk.Button(lblframe_proveedor, text="Eliminar", command=self.eliminar_proveedor).place(x=80, y=320, width=240,
+        #                                                                                        height=40)
 
         # Treeview para la tabla de proveedores
         treframe = tk.Frame(frame2, bg="white")
