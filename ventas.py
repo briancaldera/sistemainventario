@@ -448,21 +448,19 @@ class VentanaVentas(tk.Toplevel):
         Scrol_x = Scrollbar(treframe, orient=HORIZONTAL)
         Scrol_x.pack(side=BOTTOM, fill=X)
 
-        tree_facturas = ttk.Treeview(treframe, columns=("ID", "Factura", "Cliente", "Precio", "Subtotal", 'Fecha'),
+        tree_facturas = ttk.Treeview(treframe, columns=("Factura", "Cliente", "Precio", "Subtotal", 'Fecha'),
                                      show="headings", yscrollcommand=Scrol_y.set, xscrollcommand=Scrol_x.set)
 
         self.tree_ventas = tree_facturas
         Scrol_y.config(command=tree_facturas.yview)
         Scrol_x.config(command=tree_facturas.xview)
 
-        tree_facturas.heading("#1", text="ID")
-        tree_facturas.heading("#2", text="Factura")
-        tree_facturas.heading("#3", text="Cliente")
-        tree_facturas.heading("#4", text="Precio")
-        tree_facturas.heading("#5", text="Subtotal")
-        tree_facturas.heading("#6", text="Fecha")
+        tree_facturas.heading("#1", text="Factura")
+        tree_facturas.heading("#2", text="Cliente")
+        tree_facturas.heading("#3", text="Precio")
+        tree_facturas.heading("#4", text="Subtotal")
+        tree_facturas.heading("#5", text="Fecha")
 
-        tree_facturas.column("ID", width=70, anchor="center")
         tree_facturas.column("Factura", width=100, anchor="center")
         tree_facturas.column("Cliente", width=200, anchor="center")
         tree_facturas.column("Precio", width=130, anchor="center")
@@ -486,7 +484,7 @@ class VentanaVentas(tk.Toplevel):
             cliente = ClienteAR.get_by_id(venta.cliente_id)
 
             self.tree_ventas.insert("", 0, text=venta.venta_id, values=(
-                venta.venta_id, venta.numero_factura, cliente.nombre, venta.total_neto, venta.total_pagado,
+                venta.numero_factura, cliente.nombre, venta.total_neto, venta.total_pagado,
                 venta.fecha))
 
     def on_venta_seleccion(self, event):

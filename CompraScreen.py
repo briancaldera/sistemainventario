@@ -348,20 +348,18 @@ class VentanaCompras(tk.Toplevel):
         Scrol_x = Scrollbar(treframe, orient=HORIZONTAL)
         Scrol_x.pack(side=BOTTOM, fill=X)
 
-        tree_facturas = ttk.Treeview(treframe, columns=("ID", "Numero de compra", "Proveedor", "Costo total", 'Fecha'),
+        tree_facturas = ttk.Treeview(treframe, columns=("Numero de compra", "Proveedor", "Costo total", 'Fecha'),
                                      show="headings", yscrollcommand=Scrol_y.set, xscrollcommand=Scrol_x.set)
 
         self.tree_compras = tree_facturas
         Scrol_y.config(command=tree_facturas.yview)
         Scrol_x.config(command=tree_facturas.xview)
 
-        tree_facturas.heading("#1", text="ID")
-        tree_facturas.heading("#2", text="Numero de compra")
-        tree_facturas.heading("#3", text="Proveedor")
-        tree_facturas.heading("#4", text="Costo total")
-        tree_facturas.heading("#5", text="Fecha")
+        tree_facturas.heading("#1", text="Numero de compra")
+        tree_facturas.heading("#2", text="Proveedor")
+        tree_facturas.heading("#3", text="Costo total")
+        tree_facturas.heading("#4", text="Fecha")
 
-        tree_facturas.column("ID", width=70, anchor="center")
         tree_facturas.column("Numero de compra", width=100, anchor="center")
         tree_facturas.column("Proveedor", width=200, anchor="center")
         tree_facturas.column("Costo total", width=130, anchor="center")
@@ -383,7 +381,7 @@ class VentanaCompras(tk.Toplevel):
             proveedor = ProveedorAR.get_by_id(compra.proveedor_id)
 
             self.tree_compras.insert("", 0, text=compra.compra_id, values=(
-                compra.compra_id, compra.numero_compra, proveedor.nombre, compra.costo_total, compra.fecha))
+                compra.numero_compra, proveedor.nombre, compra.costo_total, compra.fecha))
 
     def on_compra_seleccion(self, event):
 

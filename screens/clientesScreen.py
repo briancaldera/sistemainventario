@@ -8,12 +8,12 @@ from services.ClienteService import ClienteService
 
 class ClientesScreen(tk.Frame):
 
-
-
     def __init__(self, parent, controller):
         super().__init__(parent)
         self.controller = controller
         self._cliente_service = ClienteService()
+        self._clientes = self._cliente_service.get_all_clientes()
+        self._cliente_seleccionado = None
         self.widgets()
         self.actualizar_clientes()
 
@@ -73,7 +73,7 @@ class ClientesScreen(tk.Frame):
         Scrol_x = ttk.Scrollbar(treframe, orient=tk.HORIZONTAL)
         Scrol_x.pack(side=tk.BOTTOM, fill=tk.X)
 
-        self.tree = ttk.Treeview(treframe, columns=("ID", "Cédula", "Nombre", "Telefono", "Direccion"), show="headings",
+        self.tree = ttk.Treeview(treframe, columns=("Cédula", "Nombre", "Telefono", "Direccion"), show="headings",
                                  yscrollcommand=Scrol_y.set, xscrollcommand=Scrol_x.set, selectmode='browse')
         self.tree.pack(fill=tk.BOTH, expand=True)
         self.tree.bind('<<TreeviewSelect>>', func=self.on_cliente_selected)
@@ -81,13 +81,11 @@ class ClientesScreen(tk.Frame):
         Scrol_y.config(command=self.tree.yview)
         Scrol_x.config(command=self.tree.xview)
 
-        self.tree.heading("#1", text="ID")
-        self.tree.heading("#2", text="Cédula")
-        self.tree.heading("#3", text="Nombre")
-        self.tree.heading("#4", text="Teléfono")
-        self.tree.heading("#5", text="Dirección")
+        self.tree.heading("#1", text="Cédula")
+        self.tree.heading("#2", text="Nombre")
+        self.tree.heading("#3", text="Teléfono")
+        self.tree.heading("#4", text="Dirección")
 
-        self.tree.column("ID", anchor="center")
         self.tree.column("Cédula", anchor="center")
         self.tree.column("Nombre", anchor="center")
         self.tree.column("Telefono", anchor="center")
@@ -115,10 +113,12 @@ class ClientesScreen(tk.Frame):
             print(e)
             tk.messagebox.showerror('Error', 'Ocurrió un error al intentar guardar al cliente')
 
-        pass
-
     def editar_cliente(self):
-        id = self.id_entry.get()
+
+        if self._cliente_seleccionado is None:
+            return
+
+        cliente_id = self._cliente_seleccionado.id
         cedula = self.cedula_entry.get()
         nombre = self.nombre_entry.get()
         telefono = self.telefono_entry.get()
@@ -132,8 +132,7 @@ class ClientesScreen(tk.Frame):
         }
 
         try:
-
-            self._cliente_service.update_cliente(int(id), data)
+            self._cliente_service.update_cliente(cliente_id, data)
             self.limpiar_campos()
             self.actualizar_clientes()
 
@@ -143,13 +142,12 @@ class ClientesScreen(tk.Frame):
             print(e)
             tk.messagebox.showerror('Error', 'Ocurrió un error al intentar actualizar al cliente')
 
-        pass
-
     def eliminar_cliente(self):
+        # todo remove this
+        return
         id = self.id_entry.get()
 
         try:
-
             self._cliente_service.delete_cliente(int(id))
             self.limpiar_campos()
             self.actualizar_clientes()
@@ -160,18 +158,19 @@ class ClientesScreen(tk.Frame):
             print(e)
             tk.messagebox.showerror('Error', 'Ocurrió un error al intentar eliminar al cliente')
 
-        pass
-
     def actualizar_clientes(self):
         # Implementar la lógica para actualizar la tabla de clientes
         clientes = self._cliente_service.get_all_clientes()
 
-        for row in self.tree.get_children():
-            self.tree.delete(row)
+        self._clientes = clientes
+
+        self.tree.delete(*self.tree.get_children())
 
         for cliente in clientes:
-            self.tree.insert('', tk.END, values=(cliente.id, cliente.cedula, cliente.nombre, cliente.telefono, cliente.direccion))
-        pass
+            self.tree.insert('', tk.END, values=(cliente.cedula, cliente.nombre, cliente.telefono, cliente.direccion),
+                             iid=cliente.id)
+
+        self._cliente_seleccionado = None
 
     def on_cliente_selected(self, event) -> None:
         selection = self.tree.selection()
@@ -179,29 +178,29 @@ class ClientesScreen(tk.Frame):
         if len(selection) == 0:
             return
 
-        id = selection[0]
-        item = self.tree.item(id)
+        item_id = selection[0]
 
-        id = item["values"][0]
-        cedula = item["values"][1]
-        nombre = item["values"][2]
-        telefono = item["values"][3]
-        direccion = item["values"][4]
+        for cliente in self._clientes:
+            if cliente.id == int(item_id):
+                self._cliente_seleccionado = cliente
+                break
+
+        cliente_seleccionado = self._cliente_seleccionado
 
         self.id_entry.delete(0, tk.END)
-        self.id_entry.insert(0, id)
+        self.id_entry.insert(0, cliente_seleccionado.id)
 
         self.cedula_entry.delete(0, tk.END)
-        self.cedula_entry.insert(0, cedula)
+        self.cedula_entry.insert(0, cliente_seleccionado.cedula)
 
         self.nombre_entry.delete(0, tk.END)
-        self.nombre_entry.insert(0, nombre)
+        self.nombre_entry.insert(0, cliente_seleccionado.nombre)
 
         self.telefono_entry.delete(0, tk.END)
-        self.telefono_entry.insert(0, telefono)
+        self.telefono_entry.insert(0, cliente_seleccionado.telefono)
 
         self.direccion_entry.delete(0, tk.END)
-        self.direccion_entry.insert(0, direccion)
+        self.direccion_entry.insert(0, cliente_seleccionado.direccion)
 
     def limpiar_campos(self):
         self.id_entry.delete(0, tk.END)

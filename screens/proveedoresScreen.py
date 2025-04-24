@@ -1,4 +1,3 @@
-
 import tkinter as tk
 import tkinter.ttk as ttk
 from tkinter import messagebox
@@ -10,6 +9,8 @@ class ProveedoresScreen(tk.Frame):
         super().__init__(parent)
         self.controller = controller
         self._proveedores_service = ProveedorService()
+        self._proveedor_seleccionado = None
+        self._proveedores = self._proveedores_service.get_all_proveedores()
         self.widgets()
         self.actualizar_proveedores()
 
@@ -66,7 +67,7 @@ class ProveedoresScreen(tk.Frame):
         Scrol_x = ttk.Scrollbar(treframe, orient=tk.HORIZONTAL)
         Scrol_x.pack(side=tk.BOTTOM, fill=tk.X)
 
-        self.tree = ttk.Treeview(treframe, columns=("ID", "Nombre", "Telefono", "Direccion"), show="headings",
+        self.tree = ttk.Treeview(treframe, columns=("Nombre", "Telefono", "Direccion"), show="headings",
                                  yscrollcommand=Scrol_y.set, xscrollcommand=Scrol_x.set, selectmode='browse')
 
         self.tree.pack(fill=tk.BOTH, expand=True)
@@ -75,12 +76,10 @@ class ProveedoresScreen(tk.Frame):
         Scrol_y.config(command=self.tree.yview)
         Scrol_x.config(command=self.tree.xview)
 
-        self.tree.heading("#1", text="ID")
-        self.tree.heading("#2", text="Nombre")
-        self.tree.heading("#3", text="Teléfono")
-        self.tree.heading("#4", text="Dirección")
+        self.tree.heading("#1", text="Nombre")
+        self.tree.heading("#2", text="Teléfono")
+        self.tree.heading("#3", text="Dirección")
 
-        self.tree.column("ID", anchor="center")
         self.tree.column("Nombre", anchor="center")
         self.tree.column("Telefono", anchor="center")
         self.tree.column("Direccion", anchor="center")
@@ -109,36 +108,29 @@ class ProveedoresScreen(tk.Frame):
         pass
 
     def editar_proveedor(self):
-        # Implementar la lógica para editar un proveedor
+        if self._proveedor_seleccionado is None:
+            return
 
-        id = self.id_entry.get()
+        proveedor_id = self._proveedor_seleccionado.id
         nombre = self.nombre_entry.get()
         telefono = self.telefono_entry.get()
         direccion = self.direccion_entry.get()
 
-        data = {
-            'nombre': nombre,
-            'telefono': telefono,
-            'direccion': direccion
-        }
+        data = {'nombre': nombre, 'telefono': telefono, 'direccion': direccion}
 
         try:
-
-            self._proveedores_service.update_proveedor(int(id), data)
+            self._proveedores_service.update_proveedor(proveedor_id, data)
             self.limpiar_campos()
             self.actualizar_proveedores()
 
             tk.messagebox.showinfo('Proveedor actualizado', 'Proveedor actualizado exitosamente')
-
         except Exception as e:
             print(e)
             tk.messagebox.showerror('Error', 'Ocurrió un error al intentar actualizar al proveedor')
 
-        pass
-
     def eliminar_proveedor(self):
-        # Implementar la lógica para eliminar un proveedor
-
+        # todo remove
+        return
         id = self.id_entry.get()
 
         try:
@@ -153,19 +145,16 @@ class ProveedoresScreen(tk.Frame):
             print(e)
             tk.messagebox.showerror('Error', 'Ocurrió un error al intentar eliminar al proveedor')
 
-        pass
-
     def actualizar_proveedores(self):
         # Implementar la lógica para actualizar la tabla de proveedores
         proveedores = self._proveedores_service.get_all_proveedores()
 
-        for row in self.tree.get_children():
-            self.tree.delete(row)
+        self.tree.delete(*self.tree.get_children())
 
         for proveedor in proveedores:
-            self.tree.insert('', tk.END,
-                             values=(proveedor.id, proveedor.nombre, proveedor.telefono, proveedor.direccion))
-        pass
+            self.tree.insert('', tk.END, values=(proveedor.nombre, proveedor.telefono, proveedor.direccion), iid=proveedor.id)
+
+        self._proveedor_seleccionado = None
 
     def on_proveedor_selected(self, event) -> None:
         selection = self.tree.selection()
@@ -173,25 +162,24 @@ class ProveedoresScreen(tk.Frame):
         if len(selection) == 0:
             return
 
-        id = selection[0]
-        item = self.tree.item(id)
+        iid = selection[0]
 
-        id = item["values"][0]
-        nombre = item["values"][1]
-        telefono = item["values"][2]
-        direccion = item["values"][3]
+        for proveedor in self._proveedores:
+            if proveedor.id == int(iid):
+                self._proveedor_seleccionado = proveedor
+                break
 
         self.id_entry.delete(0, tk.END)
-        self.id_entry.insert(0, id)
+        self.id_entry.insert(0, self._proveedor_seleccionado.id)
 
         self.nombre_entry.delete(0, tk.END)
-        self.nombre_entry.insert(0, nombre)
+        self.nombre_entry.insert(0, self._proveedor_seleccionado.nombre)
 
         self.telefono_entry.delete(0, tk.END)
-        self.telefono_entry.insert(0, telefono)
+        self.telefono_entry.insert(0, self._proveedor_seleccionado.telefono)
 
         self.direccion_entry.delete(0, tk.END)
-        self.direccion_entry.insert(0, direccion)
+        self.direccion_entry.insert(0, self._proveedor_seleccionado.direccion)
 
     def limpiar_campos(self):
         self.id_entry.delete(0, tk.END)
