@@ -7,6 +7,12 @@ class Inventario(tk.Frame):
 
     db_name = "database.db"
 
+    _colores_existencias: dict[str, str] = {
+        'agotado': '#fc035a',
+        'escaso': '#fcbe03',
+        'disponible': '#03fc88',
+    }
+
     def __init__(self, parent, controller):
         super().__init__(parent)
         self.controller = controller
@@ -14,6 +20,7 @@ class Inventario(tk.Frame):
         self.conn = sqlite3.connect(self.db_name)
         self.cursor = self.conn.cursor()
         self.widgets()
+        self.actualizar_inventario()
 
     def widgets(self):
 
@@ -62,7 +69,6 @@ class Inventario(tk.Frame):
         boton_editar = Button(Labelframe, text="Editar", font=("Arial", 12), bg="gray", fg="white", command=self.editar_producto)
         boton_editar.place(x=80, y=400, width=240, height=40)
 
-
         #tabla
         treFrame = Frame(frame2, bg="white")
         treFrame.place(x=450, y=30, width=630, height=400)
@@ -94,7 +100,8 @@ class Inventario(tk.Frame):
         self.tre.column("COSTO", width=100, anchor="center")
         self.tre.column("EXISTENCIAS", width=100, anchor="center")
 
-        self.mostrar()
+        for estado, color in self._colores_existencias.items():
+            self.tre.tag_configure(estado, background=color)
 
         btn_actualizar = Button(frame2, text="Actualizar inventario", font=("Arial", 12), bg="gray", fg="white", command=self.actualizar_inventario)
         btn_actualizar.place(x=440, y=480, width=260, height=50)
@@ -119,10 +126,9 @@ class Inventario(tk.Frame):
             return False
         return True
     
-    def mostrar(self):
-        # Limpiar el Treeview
-        for item in self.tre.get_children():
-            self.tre.delete(item)
+    def actualizar_inventario(self):
+
+        self.tre.delete(*self.tre.get_children())
 
         consulta = "SELECT * FROM inventario ORDER BY producto_id DESC"
         resultado = self.eje_consulta(consulta)
@@ -133,16 +139,20 @@ class Inventario(tk.Frame):
             except ValueError:
                 precio_d = elem[3]
                 costo_d = elem[4]
-                
-            self.tre.insert("", 0, text=elem[0], values=(elem[0], elem[1], elem[2], precio_d, costo_d, elem[5]))
 
-    def actualizar_inventario(self):
-        for item in self.tre.get_children():
-            self.tre.delete(item)
+            cantidad = int(elem[5])
+            estado = ''
 
-        self.mostrar()
+            if cantidad > 8:
+                estado = 'disponible'
+            elif cantidad > 0:
+                estado = 'escaso'
+            else:
+                estado = 'agotado'
 
-        messagebox.showinfo("Inventario", "Inventario actualizado")  
+            self.tre.insert("", 0, text=elem[0], values=(elem[0], elem[1], elem[2], precio_d, costo_d, elem[5]), tags=(estado,))
+            self.tre.tag_configure('agotado', background='#FF0000')
+
 
     def registrar(self):
         nombre = self.nombre.get()
@@ -156,7 +166,7 @@ class Inventario(tk.Frame):
                 consulta = "INSERT INTO inventario VALUES(?, ?, ?, ?, ?, ?)"
                 parametros = (None, nombre, prov, precio, costo, existencia)
                 self.eje_consulta(consulta, parametros)
-                self.mostrar() #se actualiza el treview aqui
+                self.actualizar_inventario()
                 self.nombre.delete(0, END)
                 self.proveedor.delete(0, END)
                 self.precio.delete(0, END)
