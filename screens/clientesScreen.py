@@ -96,7 +96,6 @@ class ClientesScreen(tk.Frame):
         btn_actualizar.place(x=440, y=480, width=260, height=50)
 
     def agregar_cliente(self):
-        # Implementar la lógica para agregar un cliente
         cedula = self.cedula_entry.get()
         nombre = self.nombre_entry.get()
         telefono = self.telefono_entry.get()
@@ -109,6 +108,9 @@ class ClientesScreen(tk.Frame):
 
             tk.messagebox.showinfo('Cliente registrado', 'Cliente registrado exitosamente')
 
+        except ValueError as e:
+            print(e)
+            tk.messagebox.showerror('Cédula duplicada', 'La cédula ya se encuentra registrada en el sistema')
         except Exception as e:
             print(e)
             tk.messagebox.showerror('Error', 'Ocurrió un error al intentar guardar al cliente')
@@ -159,7 +161,6 @@ class ClientesScreen(tk.Frame):
             tk.messagebox.showerror('Error', 'Ocurrió un error al intentar eliminar al cliente')
 
     def actualizar_clientes(self):
-        # Implementar la lógica para actualizar la tabla de clientes
         clientes = self._cliente_service.get_all_clientes()
 
         self._clientes = clientes
