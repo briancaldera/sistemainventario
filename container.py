@@ -8,6 +8,7 @@ from inventario import Inventario
 from screens.UsersWindow import UsersWindow
 from screens.clientesScreen import ClientesScreen
 from screens.proveedoresScreen import ProveedoresScreen
+from screens.referenciaScreen import ReferenciaScreen
 from utils import user
 from ventas import Ventas
 
@@ -57,6 +58,13 @@ class Container(tk.Frame):
         users_window = UsersWindow()
         users_window.mainloop()
 
+    def referencias(self):
+        if user().rol != 'admin':
+            return
+
+        referencias_window = ReferenciaScreen(self)
+        referencias_window.mainloop()
+
     def widgets(self):
         frame1 = tk.Frame(self, bg="#F5F5F5")
         frame1.pack()
@@ -77,6 +85,10 @@ class Container(tk.Frame):
 
         btnproveedores = Button(frame1, bg="#2196F3", fg="white", font="sans 14 bold", text="Proveedores", command=self.proveedores, bd=4, relief=RAISED) # Usar self.proveedores
         btnproveedores.place(x=650, y=100, width=140, height=50)
+
+        ref_button = Button(frame1, bg="#2196F3", fg="white", font="sans 14 bold", text="Referencias",
+                                command=self.referencias, bd=4, relief=RAISED)
+        ref_button.place(x=650, y=250, width=140, height=50)
 
         btnusers = Button(frame1, bg="#2196F3", fg="white", font="sans 14 bold", text="Usuarios",
                                 command=self.usuarios, bd=4, relief=RAISED)

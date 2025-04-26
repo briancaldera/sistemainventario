@@ -5,6 +5,7 @@ from model.cliente import ClienteAR
 from model.compra import Compra, Ingreso
 from model.producto import Producto
 from model.proveedor import ProveedorAR
+from model.referencia import Referencia
 from model.venta import Venta, Egreso
 
 
@@ -13,6 +14,7 @@ class DetallesWindow(tk.Toplevel):
         super().__init__(parent)
 
         self.operacion = operacion
+        self.referencia = Referencia.get_by_id(operacion.referencia_id)
 
         if isinstance(operacion, Compra):
             self.sujeto = ProveedorAR.get_by_id(operacion.proveedor_id)
@@ -44,7 +46,7 @@ class DetallesWindow(tk.Toplevel):
         self.productos_tabla.delete(*self.productos_tabla.get_children())
         for producto in self.productos_con_cantidad:
             self.productos_tabla.insert("", "end", values=(
-                producto["producto"].nombre, producto["producto"].precio, producto["cantidad"],
+                producto["producto"].nombre, producto["producto"].precio, producto['producto'].precio * self.referencia.valor, producto["cantidad"],
                 producto["producto"].precio * producto["cantidad"]))
 
     def widgets(self):
@@ -64,6 +66,12 @@ class DetallesWindow(tk.Toplevel):
         telefono_sujeto = tk.Label(frame1, text=f"Teléfono: {self.sujeto.telefono}")
         telefono_sujeto.place(x=10, y=100)
 
+        numero_operacion = tk.Label(frame1, text=f"Nro. {'Orden de compra: ' if isinstance(self.operacion, Compra) else 'Factura: '}: {self.operacion.numero_compra if isinstance(self.operacion, Compra) else self.operacion.numero_factura}")
+        numero_operacion.place(x=100, y=10)
+
+        referencia = tk.Label(frame1, text=f"Referencia: Bs. {self.referencia.valor}")
+        referencia.place(x=500, y=100)
+
         # Tabla de productos
 
         scroll_y = tk.Scrollbar(self, orient=tk.VERTICAL)
@@ -73,7 +81,7 @@ class DetallesWindow(tk.Toplevel):
         scroll_x.pack(side=tk.BOTTOM, fill=tk.X)
 
         self.productos_tabla = ttk.Treeview(self,
-                                            columns=("Producto", "Precio", "Cantidad", "Total"),
+                                            columns=("Producto", "Precio", 'Precio en Bolívares', "Cantidad", "Total"),
                                             show="headings", yscrollcommand=scroll_y.set, xscrollcommand=scroll_x.set)
         self.productos_tabla.pack(fill=tk.BOTH, expand=True)
 
@@ -82,10 +90,12 @@ class DetallesWindow(tk.Toplevel):
 
         self.productos_tabla.heading("#1", text="Producto")
         self.productos_tabla.heading("#2", text="Precio" if isinstance(self.operacion, Venta) else "Costo")
-        self.productos_tabla.heading("#3", text="Cantidad")
-        self.productos_tabla.heading("#4", text="Total")
+        self.productos_tabla.heading("#3", text='Precio en Bolívares')
+        self.productos_tabla.heading("#4", text="Cantidad")
+        self.productos_tabla.heading("#5", text="Total")
 
         self.productos_tabla.column("#1", anchor="center")
         self.productos_tabla.column("#2", anchor="center")
         self.productos_tabla.column("#3", anchor="center")
         self.productos_tabla.column("#4", anchor="center")
+        self.productos_tabla.column("#5", anchor="center")

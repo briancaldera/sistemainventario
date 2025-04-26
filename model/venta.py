@@ -8,6 +8,8 @@ from datetime import datetime
 from db.database import Database as DB
 from typing import TypedDict
 
+from model.referencia import Referencia
+
 ItemVenta = TypedDict('ItemVenta', {'producto': Producto, 'cantidad': int, 'precio': Decimal})
 
 
@@ -17,6 +19,7 @@ class Venta(Model):
     cliente_id = ForeignKeyField(ClienteAR, object_id_name='id', backref='ventas')
     total_neto = DecimalField()
     total_pagado = DecimalField()
+    referencia_id = ForeignKeyField(Referencia, null=False)
     fecha = DateField()
 
     class Meta:
@@ -25,7 +28,7 @@ class Venta(Model):
 
     @staticmethod
     def crear(cliente: Cliente, total_neto: Decimal, total_pagado: Decimal,
-              productos: list[ItemVenta]):
+              productos: list[ItemVenta], referencia: Referencia):
         # Start transaction here
 
         max_factura = Venta.select(Venta.numero_factura).order_by(Venta.numero_factura.desc()).limit(1)
@@ -35,7 +38,7 @@ class Venta(Model):
         conn = DB.get_connection()
         with conn.atomic() as trans:
             venta = Venta.create(numero_factura=siguiente_numero_factura, cliente_id=cliente.id, total_neto=total_neto,
-                                 total_pagado=total_pagado, fecha=datetime.now())
+                                 total_pagado=total_pagado, fecha=datetime.now(), referencia_id=referencia.referencia_id)
 
             egresos = []
 

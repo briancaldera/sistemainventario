@@ -2,6 +2,7 @@ from db.database import Database
 from model.compra import Compra
 from model.producto import Producto
 from model.proveedor import ProveedorAR
+from model.referencia import Referencia
 from model.venta import Venta
 from repository.ClienteRepository import ClienteRepository
 from repository.ProveedorRepository import ProveedorRepository
@@ -18,6 +19,7 @@ class MercadeoService:
         proveedor_id: int
         costo_total: str
         lista_producto: list[ProductoItem]
+        referencia_id: int
 
     @dataclass(frozen=True)
     class VentaRequest:
@@ -25,6 +27,7 @@ class MercadeoService:
         total_neto: str
         total_pagado: str
         lista_producto: list[ProductoItem]
+        referencia_id: int
 
     def __init__(self):
         self.cliente_repository = ClienteRepository()
@@ -37,6 +40,8 @@ class MercadeoService:
         return Venta.select().order_by(Venta.fecha.desc())
 
     def comprar(self, request: CompraRequest):
+
+        ref = Referencia.get_by_id(request.referencia_id)
 
         conn = Database.get_connection()
         with conn.atomic() as trans:
@@ -53,11 +58,14 @@ class MercadeoService:
 
                 productos.append({'producto': producto, 'cantidad': item['cantidad'], 'precio': producto.precio})
 
-            Compra.crear(proveedor, Decimal(request.costo_total), productos)
+            Compra.crear(proveedor, Decimal(request.costo_total), productos, ref)
 
         # End transaction
 
     def vender(self, request: VentaRequest):
+
+        ref = Referencia.get_by_id(request.referencia_id)
+
         conn = Database.get_connection()
         with conn.atomic() as trans:
             # Start transaction
@@ -73,6 +81,6 @@ class MercadeoService:
 
                 productos.append({'producto': producto, 'cantidad': item['cantidad'], 'precio': producto.precio})
 
-            Venta.crear(cliente, Decimal(request.total_neto), Decimal(request.total_pagado), productos)
+            Venta.crear(cliente, Decimal(request.total_neto), Decimal(request.total_pagado), productos, ref)
 
             # End transaction

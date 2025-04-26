@@ -5,17 +5,20 @@ from model.cliente import ClienteAR
 from model.compra import Compra, Ingreso
 from model.producto import Producto
 from model.proveedor import ProveedorAR
+from model.referencia import Referencia
 from model.venta import Venta, Egreso
+from repository.UserRepository import UserRepository
 from screens.HomeWindow import HomeWindow
 from services.ClienteService import ClienteService
 from services.ProductoService import ProductoService
 from services.ProveedorServices import ProveedorService
+from services.UserService import UserService
 
 if __name__ == "__main__":
     # Arranca la base de datos
 
     conn = Database.get_connection()
-    conn.create_tables([Compra, Venta, Ingreso, Egreso, Producto, ProveedorAR, ClienteAR])
+    conn.create_tables([Compra, Venta, Ingreso, Egreso, Producto, ProveedorAR, ClienteAR, Referencia])
     proveedores_service = ProveedorService()
     cliente_service = ClienteService()
 
@@ -24,6 +27,8 @@ if __name__ == "__main__":
 
         auth = AuthManager.get_instance()
         auth.register_user('username1', 'username1')
+        user_service = UserService(UserRepository())
+        user_service.update_role('username1', 'admin')
 
         for proveedor in dummy_proveedores:
             proveedores_service.save(proveedor['nombre'], proveedor['telefono'], proveedor['direccion'], )
@@ -31,7 +36,7 @@ if __name__ == "__main__":
         productos_service = ProductoService()
         for producto in dummy_productos:
             productos_service.crear(
-                ProductoService.CrearProductoRequest(producto['nombre'], producto['proveedor'], producto['costo'],
+                ProductoService.CrearProductoRequest(producto['nombre'], producto['costo'],
                                                      producto['precio'], producto['existencia']))
 
         for cliente in dummy_clientes:
