@@ -36,7 +36,7 @@ if __name__ == "__main__":
         productos_service = ProductoService()
         for producto in dummy_productos:
             productos_service.crear(
-                ProductoService.CrearProductoRequest(producto['nombre'], producto['proveedor'], producto['costo'],
+                ProductoService.CrearProductoRequest(producto['nombre'], producto['costo'],
                                                      producto['precio'], producto['existencia']))
 
         for cliente in dummy_clientes:

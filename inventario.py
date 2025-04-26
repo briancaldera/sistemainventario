@@ -3,8 +3,11 @@ from tkinter import *
 import tkinter as tk
 from tkinter import ttk, messagebox
 
-class Inventario(tk.Frame):
+from model.producto import Producto
+from services.ProductoService import ProductoService
 
+
+class Inventario(tk.Frame):
     db_name = "database.db"
 
     _colores_existencias: dict[str, str] = {
@@ -15,7 +18,10 @@ class Inventario(tk.Frame):
 
     def __init__(self, parent, controller):
         super().__init__(parent)
+        self._producto_service = ProductoService()
         self.controller = controller
+        self.producto_seleccionado: Producto | None = None
+        self.productos: list[Producto] = []
         self.pack()
         self.conn = sqlite3.connect(self.db_name)
         self.cursor = self.conn.cursor()
@@ -43,11 +49,6 @@ class Inventario(tk.Frame):
         self.nombre = ttk.Entry(Labelframe, font=("Arial", 12))
         self.nombre.place(x=140, y=20, width=240, height=40)
 
-        lblproveedor = Label(Labelframe, text="Proveedor: ", font=("Arial", 12), bg="#C6D9E3", fg="black")
-        lblproveedor.place(x=10, y=80)
-        self.proveedor = ttk.Entry(Labelframe, font=("Arial", 12))
-        self.proveedor.place(x=140, y=80, width=240, height=40)
-
         lblprecio = Label(Labelframe, text="Precio: ", font=("Arial", 12), bg="#C6D9E3", fg="black")
         lblprecio.place(x=10, y=140)
         self.precio = ttk.Entry(Labelframe, font=("Arial", 12))
@@ -63,13 +64,15 @@ class Inventario(tk.Frame):
         self.stock = ttk.Entry(Labelframe, font=("Arial", 12))
         self.stock.place(x=140, y=260, width=240, height=40)
 
-        boton_agregar = Button(Labelframe, text="Agregar", font=("Arial", 12), bg="gray", fg="white", command=self.registrar)
+        boton_agregar = Button(Labelframe, text="Agregar", font=("Arial", 12), bg="gray", fg="white",
+                               command=self.registrar)
         boton_agregar.place(x=80, y=340, width=240, height=40)
 
-        boton_editar = Button(Labelframe, text="Editar", font=("Arial", 12), bg="gray", fg="white", command=self.editar_producto)
+        boton_editar = Button(Labelframe, text="Editar", font=("Arial", 12), bg="gray", fg="white",
+                              command=self.editar_producto)
         boton_editar.place(x=80, y=400, width=240, height=40)
 
-        #tabla
+        # tabla
         treFrame = Frame(frame2, bg="white")
         treFrame.place(x=450, y=30, width=630, height=400)
 
@@ -80,22 +83,22 @@ class Inventario(tk.Frame):
         scrol_x.pack(side=BOTTOM, fill=X)
 
         self.tre = ttk.Treeview(treFrame, yscrollcommand=scrol_y.set, xscrollcommand=scrol_x.set, height=40,
-                                 columns=("ID", "PRODUCTO", "PROVEEDOR", "PRECIO", "COSTO", "EXISTENCIAS"), show="headings")
+                                columns=("ID", "PRODUCTO", "PRECIO", "COSTO", "EXISTENCIAS"), show="headings")
         self.tre.pack(fill=BOTH, expand=True)
 
         scrol_y.config(command=self.tre.yview)
         scrol_x.config(command=self.tre.xview)
 
+        self.tre.bind('<<TreeviewSelect>>', func=self.on_producto_seleccionado)
+
         self.tre.heading("ID", text="id")
         self.tre.heading("PRODUCTO", text="Producto")
-        self.tre.heading("PROVEEDOR", text="Proveedor")
         self.tre.heading("PRECIO", text="Precio")
         self.tre.heading("COSTO", text="Costo")
         self.tre.heading("EXISTENCIAS", text="Existencias")
 
         self.tre.column("ID", width=70, anchor="center")
         self.tre.column("PRODUCTO", width=150, anchor="center")
-        self.tre.column("PROVEEDOR", width=150, anchor="center")
         self.tre.column("PRECIO", width=100, anchor="center")
         self.tre.column("COSTO", width=100, anchor="center")
         self.tre.column("EXISTENCIAS", width=100, anchor="center")
@@ -103,18 +106,29 @@ class Inventario(tk.Frame):
         for estado, color in self._colores_existencias.items():
             self.tre.tag_configure(estado, background=color)
 
-        btn_actualizar = Button(frame2, text="Actualizar inventario", font=("Arial", 12), bg="gray", fg="white", command=self.actualizar_inventario)
+        btn_actualizar = Button(frame2, text="Actualizar inventario", font=("Arial", 12), bg="gray", fg="white",
+                                command=self.actualizar_inventario)
         btn_actualizar.place(x=440, y=480, width=260, height=50)
 
-    def eje_consulta(self, consulta, parametros=()):
-        with sqlite3.connect(self.db_name) as conn:
-            cursor = conn.cursor()
-            resultado = cursor.execute(consulta, parametros)
-            conn.commit()
-        return resultado
-    
-    def validacion(self, nombre, proveedor, precio, costo, existencia):
-        if not (nombre and proveedor and precio and costo and existencia):
+    def on_producto_seleccionado(self, event):
+        selection = self.tre.selection()
+
+        if len(selection) == 0:
+            return
+
+        for producto in self._productos:
+            if producto.producto_id == int(selection[0]):
+                self.producto_seleccionado = producto
+                break
+
+        self.limpiar_campos()
+        self.nombre.insert(0, self.producto_seleccionado.nombre)
+        self.precio.insert(0, self.producto_seleccionado.precio)
+        self.costo.insert(0, self.producto_seleccionado.costo)
+        self.stock.insert(0, self.producto_seleccionado.existencia)
+
+    def validacion(self, nombre, precio, costo, existencia):
+        if not (nombre and precio and costo and existencia):
             messagebox.showerror("Error", "Todos los campos son requeridos")
             return False
         try:
@@ -125,53 +139,38 @@ class Inventario(tk.Frame):
             messagebox.showerror("Error", "Precio, costo y existencias deben ser numeros")
             return False
         return True
-    
+
     def actualizar_inventario(self):
 
         self.tre.delete(*self.tre.get_children())
 
-        consulta = "SELECT * FROM inventario ORDER BY producto_id DESC"
-        resultado = self.eje_consulta(consulta)
-        for elem in resultado:
-            try:
-                precio_d = "{:.2f}".format(float(elem[3])) if elem[3] else ""
-                costo_d = "{:.2f}".format(float(elem[4])) if elem[4] else ""
-            except ValueError:
-                precio_d = elem[3]
-                costo_d = elem[4]
+        productos = self._producto_service.listar()
 
-            cantidad = int(elem[5])
-            estado = ''
+        self._productos = productos
 
-            if cantidad > 8:
+        for producto in productos:
+            if producto.existencia > 8:
                 estado = 'disponible'
-            elif cantidad > 0:
+            elif producto.existencia > 0:
                 estado = 'escaso'
             else:
                 estado = 'agotado'
 
-            self.tre.insert("", 0, text=elem[0], values=(elem[0], elem[1], elem[2], precio_d, costo_d, elem[5]), tags=(estado,))
-            self.tre.tag_configure('agotado', background='#FF0000')
-
+            self.tre.insert("", 0, iid=producto.producto_id, text=producto.producto_id, values=(producto.producto_id, producto.nombre, producto.precio, producto.costo, producto.existencia), tags=(estado,))
 
     def registrar(self):
         nombre = self.nombre.get()
-        prov = self.proveedor.get()
         precio = self.precio.get()
         costo = self.costo.get()
         existencia = self.stock.get()
 
-        if self.validacion(nombre, prov, precio, costo, existencia):
+        if self.validacion(nombre, precio, costo, existencia):
             try:
-                consulta = "INSERT INTO inventario VALUES(?, ?, ?, ?, ?, ?)"
-                parametros = (None, nombre, prov, precio, costo, existencia)
-                self.eje_consulta(consulta, parametros)
+
+                request = self._producto_service.CrearProductoRequest(nombre, costo, precio, int(existencia))
+                self._producto_service.crear(request)
                 self.actualizar_inventario()
-                self.nombre.delete(0, END)
-                self.proveedor.delete(0, END)
-                self.precio.delete(0, END)
-                self.costo.delete(0, END)
-                self.stock.delete(0, END)
+                self.limpiar_campos()
                 messagebox.showinfo("Éxito", "Producto registrado correctamente")
             except sqlite3.Error as e:
                 messagebox.showerror("Error", f"Error al registrar el producto: {e}")
@@ -179,13 +178,11 @@ class Inventario(tk.Frame):
             messagebox.showerror("Error", "Error al registrar el producto")
 
     def editar_producto(self):
-        seleccion = self.tre.selection()
-        if not seleccion:
+        if not self.producto_seleccionado:
             messagebox.showwarning("Editar producto", "Seleccione un producto")
             return
-    
-        item_id = self.tre.item(seleccion)["text"]
-        item_values = self.tre.item(seleccion)["values"]
+
+        item_id = self.producto_seleccionado.producto_id
 
         ventana_editar = Toplevel(self)
         ventana_editar.title("Editar producto")
@@ -196,56 +193,62 @@ class Inventario(tk.Frame):
         lbl_nombre.grid(row=0, column=0, padx=10, pady=10)
         entry_nombre = Entry(ventana_editar, font=("Arial", 12))
         entry_nombre.grid(row=0, column=1, padx=10, pady=10)
-        entry_nombre.insert(0, item_values[1])
-
-        lbl_proveedor = Label(ventana_editar, text="Proveedor: ", font=("Arial", 12), bg="#C6D9E3", fg="black")
-        lbl_proveedor.grid(row=1, column=0, padx=10, pady=10)
-        entry_proveedor = Entry(ventana_editar, font=("Arial", 12))
-        entry_proveedor.grid(row=1, column=1, padx=10, pady=10)
-        entry_proveedor.insert(0, item_values[2])
+        entry_nombre.insert(0, self.producto_seleccionado.nombre)
 
         lbl_precio = Label(ventana_editar, text="Precio: ", font=("Arial", 12), bg="#C6D9E3", fg="black")
         lbl_precio.grid(row=2, column=0, padx=10, pady=10)
         entry_precio = Entry(ventana_editar, font=("Arial", 12))
         entry_precio.grid(row=2, column=1, padx=10, pady=10)
-        entry_precio.insert(0, item_values[3].split()[0].replace(",", ""))
+        entry_precio.insert(0, self.producto_seleccionado.precio)
 
         lbl_costo = Label(ventana_editar, text="Costo: ", font=("Arial", 12), bg="#C6D9E3", fg="black")
         lbl_costo.grid(row=3, column=0, padx=10, pady=10)
         entry_costo = Entry(ventana_editar, font=("Arial", 12))
         entry_costo.grid(row=3, column=1, padx=10, pady=10)
-        entry_costo.insert(0, item_values[4].split()[0].replace(",", ""))
+        entry_costo.insert(0, self.producto_seleccionado.costo)
 
         lbl_existencias = Label(ventana_editar, text="Existencias: ", font=("Arial", 12), bg="#C6D9E3", fg="black")
         lbl_existencias.grid(row=4, column=0, padx=10, pady=10)
         entry_existencias = Entry(ventana_editar, font=("Arial", 12))
         entry_existencias.grid(row=4, column=1, padx=10, pady=10)
-        entry_existencias.insert(0, item_values[5])
+        entry_existencias.insert(0, self.producto_seleccionado.existencia)
 
         def guardar_cambios():
             nombre = entry_nombre.get()
-            proveedor = entry_proveedor.get()
             precio = entry_precio.get()
             costo = entry_costo.get()
             existencias = entry_existencias.get()
 
-            if not (nombre and proveedor and precio and costo and existencias):
+            if not (nombre and precio and costo and existencias):
                 messagebox.showerror("Error", "Todos los campos son requeridos")
                 return
-            
-            try: 
+
+            try:
                 precio = float(precio.replace(",", ""))
                 costo = float(costo.replace(",", ""))
             except ValueError:
                 messagebox.showerror("Error", "Precio y costo deben ser números")
                 return
 
-            consulta = "UPDATE inventario SET nombre = ?, proveedor = ?, precio = ?, costo = ?, existencia = ? WHERE id = ?"
-            parametros = (nombre, proveedor, precio, costo, existencias, item_id)
-            self.eje_consulta(consulta, parametros)
+            request = ProductoService.ActualizarProductoRequest(id=item_id, nombre=nombre, costo=str(costo),
+                                                                precio=str(precio), existencia=int(existencias))
+
+            try:
+                self._producto_service.actualizar(request)
+                messagebox.showinfo('Cambios guardados', 'Los cambios fueron guardados')
+            except Exception as e:
+                print(e)
+                messagebox.showerror('Error', 'Ocurrió un error al intentar actualizar el producto')
+
             self.actualizar_inventario()
             ventana_editar.destroy()
 
-        btn_guardar = Button(ventana_editar, text="Guardar cambios", font=("Arial", 12), bg="gray", fg="white", command=guardar_cambios)
-        btn_guardar.place(x=80, y=250, width=240, height=40)        
+        btn_guardar = Button(ventana_editar, text="Guardar cambios", font=("Arial", 12), bg="gray", fg="white",
+                             command=guardar_cambios)
+        btn_guardar.place(x=80, y=250, width=240, height=40)
 
+    def limpiar_campos(self):
+        self.nombre.delete(0, tk.END)
+        self.precio.delete(0, tk.END)
+        self.costo.delete(0, tk.END)
+        self.stock.delete(0, tk.END)

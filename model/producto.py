@@ -9,7 +9,6 @@ from db.database import Database as DB
 class Producto(Model):
     producto_id = AutoField()
     nombre = CharField()
-    proveedor = ForeignKeyField(Proveedor, object_id_name='id')
     costo = DecimalField()
     precio = DecimalField()
     existencia = IntegerField()
@@ -30,8 +29,7 @@ class Producto(Model):
             Producto.producto_id == self.producto_id).execute()
 
     @staticmethod
-    def crear(nombre: str, proveedor: Proveedor, costo: Decimal, precio: Decimal, existencia: int):
+    def crear(nombre: str, costo: Decimal, precio: Decimal, existencia: int):
         conn = DB.get_connection()
         with conn.atomic() as trans:
-            return Producto.create(nombre=nombre, proveedor=proveedor.id, costo=costo, precio=precio,
-                                   existencia=existencia)
+            return Producto.create(nombre=nombre, costo=costo, precio=precio, existencia=existencia)

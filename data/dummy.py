@@ -12,7 +12,7 @@ dummy_clientes = [{'cedula': 'v12312312', 'nombre': 'cliente 0', 'telefono': '01
             {'cedula': 'v12312315', 'nombre': 'cliente 3', 'telefono': '0123-1234567', 'direccion': 'BNA'}, ]
 
 dummy_productos = [
-    {'nombre': 'Producto 0', 'proveedor': 1, 'costo': '2.0', 'precio': '2.5', 'existencia': 10},
-    {'nombre': 'Producto 1', 'proveedor': 1, 'costo': '2.0', 'precio': '2.5', 'existencia': 15},
-    {'nombre': 'Producto 2', 'proveedor': 1, 'costo': '2.0', 'precio': '2.5', 'existencia': 20},
+    {'nombre': 'Producto 0', 'costo': '2.0', 'precio': '2.5', 'existencia': 0},
+    {'nombre': 'Producto 1', 'costo': '1.0', 'precio': '2', 'existencia': 5},
+    {'nombre': 'Producto 2', 'costo': '3.0', 'precio': '3.5', 'existencia': 20},
 ]
