@@ -70,7 +70,7 @@ class DetallesWindow(tk.Toplevel):
         numero_operacion.place(x=100, y=10)
 
         referencia = tk.Label(frame1, text=f"Referencia: Bs. {self.referencia.valor}")
-        referencia.place(x=100, y=100)
+        referencia.place(x=500, y=100)
 
         # Tabla de productos
 

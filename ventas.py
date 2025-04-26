@@ -123,13 +123,13 @@ class Ventas(tk.Frame):
                                 command=self.abrir_ventana_factura)
         boton_facturas.place(x=750, y=10, width=240, height=50)
 
-        self.label_total_bolivares = tk.Label(frame2, text="Total: ", font=("Arial", 12), bg="#C6D9E3")
-        self.label_total_bolivares.place(x=460, y=335)
+        self.label_total_bolivares = tk.Label(frame2, text="Total: Bs.D", font=("Arial", 12), bg="#C6D9E3")
+        self.label_total_bolivares.place(x=660, y=335)
 
         self.label_referencia = tk.Label(frame2,
                                          text=f"Referencia: {self.referencia.valor if self.referencia is not None else 'Sin referencia'}",
                                          font=("Arial", 12), bg="#C6D9E3")
-        self.label_referencia.place(x=260, y=335)
+        self.label_referencia.place(x=160, y=335)
 
         self.label_suma_total = tk.Label(frame2, text="Total: ", font=("Arial", 12), bg="#C6D9E3")
         self.label_suma_total.place(x=360, y=335)
@@ -207,7 +207,7 @@ class Ventas(tk.Frame):
         if self.referencia is None:
             self.label_total_bolivares.config(text=f'Total: Sin referencia')
         else:
-            self.label_total_bolivares.config(text=f'Total: {Decimal(str(total)) * self.referencia.valor}')
+            self.label_total_bolivares.config(text=f'Total: Bs. D {Decimal(str(total)) * self.referencia.valor}')
 
 
     def agregar_a_la_cesta(self):
