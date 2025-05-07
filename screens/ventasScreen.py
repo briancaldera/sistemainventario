@@ -4,12 +4,9 @@ from decimal import Decimal
 from tkinter import *
 from tkinter import ttk, messagebox
 from typing import TypedDict
-
 from model.cliente import ClienteAR
-from model.compra import Compra
 from model.producto import Producto
-from model.proveedor import Proveedor, ProveedorAR
-from model.venta import Venta, Egreso
+from model.venta import Venta
 from screens.DetallesWindow import DetallesWindow
 from services.MercadeoService import MercadeoService
 from services.ProductoService import ProductoService
@@ -166,9 +163,9 @@ class Ventas(tk.Frame):
                 self.cliente = cliente
                 self.refrescar_cliente()
             else:
-                messagebox.showerror("Error", "Cliente no encontrado")
+                messagebox.showerror("Error", "Cliente no encontrado", parent=self)
         else:
-            messagebox.showerror("Error", "Por favor ingrese una cedula")
+            messagebox.showerror("Error", "Por favor ingrese una cedula", parent=self)
 
     def refrescar_cliente(self):
         if self.cliente:
@@ -222,7 +219,7 @@ class Ventas(tk.Frame):
                 # check producto stock and show message if not enough stock
                 producto_encontrado = [x for x in self.catalogo if x.nombre == producto][0]
                 if producto_encontrado.existencia < cantidad:
-                    messagebox.showerror("Error", f"No hay suficientes existencias de {producto}")
+                    messagebox.showerror("Error", f"No hay suficientes existencias de {producto}", parent=self)
                     return
 
                 precio = float(precio)
@@ -240,9 +237,9 @@ class Ventas(tk.Frame):
 
                 self.actualizar_total()
             except ValueError:
-                messagebox.showerror("Error", "Cantidad no valida")
+                messagebox.showerror("Error", "Cantidad no valida", parent=self)
         else:
-            messagebox.showerror("Error", "Por favor complete los campos")
+            messagebox.showerror("Error", "Por favor complete los campos", parent=self)
 
     def obtener_total(self):
         total = 0.0
@@ -253,14 +250,13 @@ class Ventas(tk.Frame):
 
     def abrir_ventana_pago(self):
         if not self.cliente:
-            messagebox.showerror("Error", "Por favor seleccione un cliente")
+            messagebox.showerror("Error", "Por favor seleccione un cliente", parent=self)
             return
 
         if not self.tree.get_children():
-            messagebox.showerror("Error", "No hay productos para pagar")
+            messagebox.showerror("Error", "No hay productos para pagar", parent=self)
             return
 
-        total = self.obtener_total()
         ventana_pago = tk.Toplevel(self)
         ventana_pago.title("Realizar Pago")
         ventana_pago.geometry("400x400")
@@ -299,11 +295,12 @@ class Ventas(tk.Frame):
                 total = self.obtener_total()
                 cambio = cantidad_pagada - total
                 if cambio < 0:
-                    messagebox.showerror("Error", "La cantidad pagada es insuficiente")
+                    # make ventana_pago be parent of messagebox
+                    messagebox.showerror("Error", "La cantidad pagada es insuficiente", parent=ventana_pago)
                     return
                 label_cambio.config(text=f"Cambio: {cambio}")
             except ValueError:
-                messagebox.showerror("Error", "Cantidad no valida")
+                messagebox.showerror("Error", "Cantidad no valida", parent=ventana_pago)
 
         boton_calcular = tk.Button(ventana_pago, text="Calcular Cambio", font=("Arial", 12), bg="white",
                                    command=calcular_cambio)
@@ -319,7 +316,7 @@ class Ventas(tk.Frame):
         cambio = Decimal(cantidad_pagada) - Decimal(total)
 
         if cambio < 0:
-            messagebox.showerror("Error", "La cantidad pagada es insuficiente")
+            messagebox.showerror("Error", "La cantidad pagada es insuficiente", parent=ventana_pago)
             return
 
         lista_productos = []
@@ -342,11 +339,11 @@ class Ventas(tk.Frame):
 
         try:
             self.mercadeo_service.vender(request)
-            messagebox.showinfo('Venta registrada', 'Venta registrada exitosamente')
+            messagebox.showinfo('Venta registrada', 'Venta registrada exitosamente', parent=ventana_pago)
             self.refrescar_productos()
 
         except Exception as e:
-            messagebox.showerror('Error', 'Ocurrió un error al intentar registrar la venta')
+            messagebox.showerror('Error', 'Ocurrió un error al intentar registrar la venta', parent=ventana_pago)
             print(e)
 
             self.numero_factura_actual += 1
@@ -368,62 +365,7 @@ class Ventas(tk.Frame):
         self.numero_factura.set(self.numero_factura_actual)
 
     def abrir_ventana_factura(self):
-
         VentanaVentas(self)
-        return
-        ventana_facturas = Toplevel(self)
-        ventana_facturas.title("Factura")
-        ventana_facturas.geometry("800x500")
-        ventana_facturas.resizable(False, False)
-        ventana_facturas.config(bg="#C6D9E3")
-
-        facturas = Label(ventana_facturas, bg="#C6D9E3", text="Facturas registradas", font=("Arial", 20))
-        facturas.place(x=150, y=15)
-
-        treframe = Frame(ventana_facturas, bg="#C6D9E3")
-        treframe.place(x=10, y=100, width=780, height=380)
-
-        Scrol_y = Scrollbar(treframe, orient=VERTICAL)
-        Scrol_y.pack(side=RIGHT, fill=Y)
-
-        Scrol_x = Scrollbar(treframe, orient=HORIZONTAL)
-        Scrol_x.pack(side=BOTTOM, fill=X)
-
-        tree_facturas = ttk.Treeview(treframe, columns=("ID", "Factura", "Producto", "Precio", "cantidad", "Subtotal"),
-                                     show="headings", yscrollcommand=Scrol_y.set, xscrollcommand=Scrol_x.set)
-        Scrol_y.config(command=tree_facturas.yview)
-        Scrol_x.config(command=tree_facturas.xview)
-
-        tree_facturas.heading("#1", text="ID")
-        tree_facturas.heading("#2", text="Factura")
-        tree_facturas.heading("#3", text="Producto")
-        tree_facturas.heading("#4", text="Precio")
-        tree_facturas.heading("#5", text="cantidad")
-        tree_facturas.heading("#6", text="Subtotal")
-
-        tree_facturas.column("ID", width=70, anchor="center")
-        tree_facturas.column("Factura", width=100, anchor="center")
-        tree_facturas.column("Producto", width=200, anchor="center")
-        tree_facturas.column("Precio", width=130, anchor="center")
-        tree_facturas.column("cantidad", width=130, anchor="center")
-        tree_facturas.column("Subtotal", width=130, anchor="center")
-
-        tree_facturas.pack(fill=BOTH, expand=True)
-
-        self.cargar_facturas(tree_facturas)
-
-    def cargar_facturas(self, tree):
-        try:
-            conn = sqlite3.connect(self.db_name)
-            c = conn.cursor()
-            c.execute("SELECT * FROM ventas")
-            facturas = c.fetchall()
-            for factura in facturas:
-                tree.insert("", "end", values=factura)
-            conn.close()
-        except sqlite3.Error as e:
-            messagebox.showerror("Error", f"Error al cargar facturas: {e}")
-
 
 class VentanaVentas(tk.Toplevel):
     def __init__(self, parent):
@@ -475,8 +417,7 @@ class VentanaVentas(tk.Toplevel):
     def refrescar_ventas(self):
         ventas = self.mercadeo_service.listar_ventas()
 
-        for item in self.tree_ventas.get_children():
-            self.tree_ventas.delete(item)
+        self.tree_ventas.delete(*self.tree_ventas.get_children())
 
         for venta in ventas:
             # Insert each venta in the self.tree_ventas considering the columns

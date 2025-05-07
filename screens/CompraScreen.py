@@ -3,7 +3,6 @@ from decimal import Decimal
 from tkinter import Frame, Label, LabelFrame, Scrollbar, Button, VERTICAL, RIGHT, Y, HORIZONTAL, BOTTOM, X, BOTH
 from tkinter import ttk, messagebox
 from typing import TypedDict
-
 from model.compra import Compra
 from model.producto import Producto
 from model.proveedor import ProveedorAR
@@ -220,7 +219,7 @@ class Compras(tk.Frame):
             self.actualizar_total()
 
         else:
-            messagebox.showerror("Error", "Por favor complete los campos")
+            messagebox.showerror("Error", "Por favor complete los campos", parent=self)
 
     def obtener_total(self):
         total = 0.0
@@ -231,14 +230,13 @@ class Compras(tk.Frame):
 
     def abrir_ventana_pago(self):
         if not self.proveedor:
-            messagebox.showerror("Error", "Por favor seleccione un proveedor")
+            messagebox.showerror("Error", "Por favor seleccione un proveedor", parent=self)
             return
 
         if not self.tree.get_children():
-            messagebox.showerror("Error", "No hay productos para pagar")
+            messagebox.showerror("Error", "No hay productos para pagar", parent=self)
             return
 
-        total = self.obtener_total()
         ventana_pago = tk.Toplevel(self)
         ventana_pago.title("Realizar Pago")
         ventana_pago.geometry("400x400")
@@ -282,7 +280,7 @@ class Compras(tk.Frame):
         cambio = Decimal(cantidad_pagada) - Decimal(total)
 
         if cambio < 0:
-            messagebox.showerror("Error", "La cantidad pagada es insuficiente")
+            messagebox.showerror("Error", "La cantidad pagada es insuficiente", parent=ventana_pago)
             return
 
         lista_productos = []
@@ -297,11 +295,11 @@ class Compras(tk.Frame):
 
         try:
             self.mercadeo_service.comprar(request)
-            messagebox.showinfo('Compra registrada', 'Compra registrada exitosamente')
+            messagebox.showinfo('Compra registrada', 'Compra registrada exitosamente', parent=ventana_pago)
             self.refrescar_productos()
 
         except Exception as e:
-            messagebox.showerror('Error', 'Ocurrió un error al intentar registrar la compra')
+            messagebox.showerror('Error', 'Ocurrió un error al intentar registrar la compra', parent=ventana_pago)
             print(e)
 
             self.numero_compra_actual += 1

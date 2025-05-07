@@ -3,15 +3,15 @@ from tkinter import *
 
 from PIL import Image, ImageTk
 
-from CompraScreen import Compras
+from screens.CompraScreen import Compras
 from inventario import Inventario
 from screens.UsersWindow import UsersWindow
 from screens.clientesScreen import ClientesScreen
 from screens.configScreen import ConfigScreen
 from screens.proveedoresScreen import ProveedoresScreen
 from screens.referenciaScreen import ReferenciaScreen
+from screens.ventasScreen import Ventas
 from utils import user
-from ventas import Ventas
 
 
 class Container(tk.Frame):
