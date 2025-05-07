@@ -4,7 +4,7 @@ from peewee import SqliteDatabase as PeeweeSqlite, Database as PeeweeDatabase
 import os
 import shutil
 
-use_in_memory = False
+use_in_memory = True
 
 
 class Database:

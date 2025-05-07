@@ -1,13 +1,13 @@
 from tkinter import Tk, Frame
+from tkinter import messagebox
 from typing import override
 
-from auth.AuthManager import AuthManager
-from container import Container
 from ttkthemes import ThemedStyle
 
+from auth.AuthManager import AuthManager
+from screens.ContainerScreen import Container
 from event.EventQueue import EventQueue
 from event.EventSubscriber import EventSubscriber
-from tkinter import messagebox
 
 
 class Manager(Tk, EventSubscriber):
@@ -56,10 +56,3 @@ class Manager(Tk, EventSubscriber):
         if message == 'user-logout':
             messagebox.showinfo('Cerrando sesión', 'Sesión cerrada')
             self.destroy()
-
-def main():
-    app = Manager()  # Corregido el nombre de la clase
-    app.mainloop()
-
-if __name__ == "__main__":
-    main()

@@ -4,14 +4,14 @@ from tkinter import *
 from PIL import Image, ImageTk
 
 from screens.CompraScreen import Compras
-from inventario import Inventario
+from screens.InventarioScreen import Inventario
 from screens.UsersWindow import UsersWindow
-from screens.clientesScreen import ClientesScreen
-from screens.configScreen import ConfigScreen
-from screens.proveedoresScreen import ProveedoresScreen
-from screens.referenciaScreen import ReferenciaScreen
-from screens.ventasScreen import Ventas
-from utils import user
+from screens.ClientesScreen import ClientesScreen
+from screens.ConfigScreen import ConfigScreen
+from screens.ProveedoresScreen import ProveedoresScreen
+from screens.ReferenciaScreen import ReferenciaScreen
+from screens.VentasScreen import Ventas
+from utils.utils import user
 
 
 class Container(tk.Frame):
