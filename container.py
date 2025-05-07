@@ -7,6 +7,7 @@ from CompraScreen import Compras
 from inventario import Inventario
 from screens.UsersWindow import UsersWindow
 from screens.clientesScreen import ClientesScreen
+from screens.configScreen import ConfigScreen
 from screens.proveedoresScreen import ProveedoresScreen
 from screens.referenciaScreen import ReferenciaScreen
 from utils import user
@@ -65,6 +66,14 @@ class Container(tk.Frame):
         referencias_window = ReferenciaScreen(self)
         referencias_window.mainloop()
 
+    def config(self):
+        if user().rol != 'admin':
+            return
+
+        config_window = ConfigScreen(self)
+        config_window.mainloop()
+
+
     def widgets(self):
         frame1 = tk.Frame(self, bg="#F5F5F5")
         frame1.pack()
@@ -76,6 +85,10 @@ class Container(tk.Frame):
         btncompras = Button(frame1, bg="#f4b400", fg="white", font="sans 14 bold", text="ir a compras",
                            command=self.compras)
         btncompras.place(x=500, y=170, width=140, height=50)
+
+        btnconfig = Button(frame1, bg="#2196F3", fg="white", font="sans 14 bold", text="Configuración",
+                           command=self.config, bd=4, relief=RAISED)
+        btnconfig.place(x=500, y=200, width=140, height=50)
 
         btninventario = Button(frame1, bg="#c62e26", fg="white", font="sans 14 bold", text="ir a inventario", command=self.inventario)
         btninventario.place(x=500, y=100, width=140, height=50)
