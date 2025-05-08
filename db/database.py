@@ -4,17 +4,17 @@ from peewee import SqliteDatabase as PeeweeSqlite, Database as PeeweeDatabase
 import os
 import shutil
 
-use_in_memory = True
+use_in_memory = False
 
 
 class Database:
-    _database_filename = 'database.db'
+    _database_filename = 'database/database.db'
     _instance: PeeweeDatabase | None = None
 
     @staticmethod
     def get_connection() -> PeeweeDatabase:
         if Database._instance is None:
-            Database._instance = PeeweeSqlite(':memory:' if use_in_memory else 'database.db', pragmas={'foreign_keys': 1})
+            Database._instance = PeeweeSqlite(':memory:' if use_in_memory else Database._database_filename, pragmas={'foreign_keys': 1})
 
         return Database._instance
 
@@ -33,7 +33,7 @@ class Database:
 
             # close database connection
             db.close()
-            shutil.copy('database.db', filename)
+            shutil.copy(Database._database_filename, filename)
             db.connect()
 
             print(f'Database backup successful. File saved at: {filename}')
