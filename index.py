@@ -22,6 +22,17 @@ if __name__ == "__main__":
     proveedores_service = ProveedorService()
     cliente_service = ClienteService()
 
+    # check if admin user exists
+    # if not, create it
+    user_repo = UserRepository()
+    user_repo.create_table()
+    user_service = UserService(user_repo)
+    if not user_service.find_user('admin'):
+        # create root user with username 'admin' and password 'admin'
+        auth = AuthManager.get_instance()
+        auth.register_user('admin', 'admin')
+        user_service.update_role('admin', 'admin')
+
     # Popular las tablas con datos de prueba si estamos usando la base de datos en memoria
     if use_in_memory:
 
