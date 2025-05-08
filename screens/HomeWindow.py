@@ -2,9 +2,8 @@ import tkinter as tk
 from tkinter import messagebox
 
 from auth.AuthManager import AuthManager
-from manager import Manager
+from screens.ManagerScreen import Manager
 from screens.LoginScreen import LoginScreen
-from screens.RegisterScreen import RegisterScreen
 
 
 class HomeWindow(tk.Tk):
@@ -45,23 +44,14 @@ class HomeWindow(tk.Tk):
             manager = Manager()
             manager.mainloop()
         else:
-            messagebox.showwarning('Credenciales incorrectas', 'El usuario o la contraseña son incorrectos')
+            messagebox.showwarning('Credenciales incorrectas', 'El usuario o la contraseña son incorrectos', parent=self)
 
     def register_user(self, username: str, password: str) -> None:
 
         res = self.auth.register_user(username, password)
 
         if res:
-            messagebox.showinfo('Usuario registrado', 'El usuario ha sido registrado')
+            messagebox.showinfo('Usuario registrado', 'El usuario ha sido registrado', parent=self)
             self.show_frame('LoginScreen')
         else:
-            messagebox.showerror('Error', 'Ocurrió un error al registrar el usuario')
-
-
-def main():
-    app = HomeWindow()
-    app.mainloop()
-
-
-if __name__ == "__main__":
-    main()
+            messagebox.showerror('Error', 'Ocurrió un error al registrar el usuario', parent=self)
