@@ -27,6 +27,6 @@ class ConfigScreen(tk.Toplevel):
     def backup_database(self):
         res = Database.backup()
         if res:
-            tk.messagebox.showinfo("Backup", "Copia de seguridad realizada con éxito.")
+            tk.messagebox.showinfo("Backup", "Copia de seguridad realizada con éxito.", parent=self)
         else:
-            tk.messagebox.showerror("Backup", "Error al realizar la copia de seguridad.")
+            tk.messagebox.showerror("Backup", "Error al realizar la copia de seguridad.", parent=self)

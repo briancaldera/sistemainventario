@@ -8,7 +8,6 @@ from services.ProductoService import ProductoService
 
 
 class Inventario(tk.Frame):
-    db_name = "database.db"
 
     _colores_existencias: dict[str, str] = {
         'agotado': '#fc035a',
@@ -23,8 +22,6 @@ class Inventario(tk.Frame):
         self.producto_seleccionado: Producto | None = None
         self.productos: list[Producto] = []
         self.pack()
-        self.conn = sqlite3.connect(self.db_name)
-        self.cursor = self.conn.cursor()
         self.widgets()
         self.actualizar_inventario()
 

@@ -16,7 +16,6 @@ Cesta = list[TypedDict('Cesta', {'producto': Producto, 'cantidad': int})]
 
 
 class Ventas(tk.Frame):
-    db_name = "database.db"
 
     def __init__(self, parent, controller):
         super().__init__(parent)
