@@ -81,21 +81,21 @@ class Container(tk.Frame):
         frame1.pack()
         frame1.place(x=0, y=0, width=800, height=400)
 
-        btnventas = Button(frame1, bg="#f4b400", fg="white", font="sans 14 bold", text="ir a ventas",
+        btnventas = Button(frame1, bg="#f4b400", fg="white", font="sans 14 bold", text="Ir a ventas",
                            command=self.ventas)
         btnventas.place(x=500, y=30, width=140, height=50)
 
-        btncompras = Button(frame1, bg="#f4b400", fg="white", font="sans 14 bold", text="ir a compras",
+        btninventario = Button(frame1, bg="#c62e26", fg="white", font="sans 14 bold", text="Ir a inventario",
+                               command=self.inventario)
+        btninventario.place(x=500, y=100, width=140, height=50)
+
+        btncompras = Button(frame1, bg="#f4b400", fg="white", font="sans 14 bold", text="Ir a compras",
                             command=self.compras)
         btncompras.place(x=500, y=170, width=140, height=50)
 
         btnconfig = Button(frame1, bg="#2196F3", fg="white", font="sans 14 bold", text="Configuración",
                            command=self.config, bd=4, relief=RAISED)
-        btnconfig.place(x=500, y=200, width=140, height=50)
-
-        btninventario = Button(frame1, bg="#c62e26", fg="white", font="sans 14 bold", text="ir a inventario",
-                               command=self.inventario)
-        btninventario.place(x=500, y=100, width=140, height=50)
+        btnconfig.place(x=500, y=240, width=140, height=50)
 
         btnclientes = Button(frame1, bg="#4CAF50", fg="white", font="sans 14 bold", text="Clientes",
                              command=self.clientes, bd=4, relief=RAISED)  # Usar self.clientes
@@ -107,11 +107,11 @@ class Container(tk.Frame):
 
         ref_button = Button(frame1, bg="#2196F3", fg="white", font="sans 14 bold", text="Referencias",
                             command=self.referencias, bd=4, relief=RAISED)
-        ref_button.place(x=650, y=250, width=140, height=50)
+        ref_button.place(x=650, y=240, width=140, height=50)
 
         btnusers = Button(frame1, bg="#2196F3", fg="white", font="sans 14 bold", text="Usuarios",
                           command=self.usuarios, bd=4, relief=RAISED)
-        btnusers.place(x=650, y=200, width=140, height=50)
+        btnusers.place(x=650, y=170, width=140, height=50)
 
         logout_button = Button(frame1, text="Cerrar sesión", command=self.controlador.logout)
         logout_button.place(x=680, y=350, width=100, height=30)
