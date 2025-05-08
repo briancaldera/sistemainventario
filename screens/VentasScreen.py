@@ -358,7 +358,7 @@ class Ventas(tk.Frame):
 
         max_factura = Venta.select(Venta.numero_factura).order_by(Venta.numero_factura.desc()).limit(1)
 
-        return max_factura.get().numero_compra + 1 if max_factura.exists() else 1
+        return max_factura.get().numero_factura + 1 if max_factura.exists() else 1
 
     def mostrar_numero_factura(self):
         self.numero_factura.set(self.numero_factura_actual)
