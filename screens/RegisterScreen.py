@@ -10,6 +10,9 @@ class RegisterScreen(tk.Tk):
         super().__init__()
         self.widgets()
         self.auth = AuthManager.get_instance()
+        self.title('Registrar usuario')
+        self.resizable(False, False)
+        self.geometry('400x300+500+200')
 
     def widgets(self):
         # Frame para el título (frame2)

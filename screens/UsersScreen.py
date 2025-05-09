@@ -17,12 +17,25 @@ class UsersScreen(tk.Frame):
         frame2 = tk.Frame(self, bg="#C6D9E3", highlightbackground="gray", highlightthickness=1)
         frame2.place(x=0, y=100, width=1100, height=550)
 
+        titulo = tk.Label(self, text="USUARIOS", font=("Arial", 20), bg="#C6D9E3", anchor="center")
+        titulo.pack()
+        titulo.place(x=5, y=0, width=1090, height=90)
+
+        usuarion_label = tk.Label(frame2, text='Nombre de usuario', bg="#C6D9E3", font=("Arial", 12))
+        usuarion_label.place(x=100, y=150)
+
 
         self.username = tk.Entry(frame2, )
         self.username.place(x=100, y=200)
 
+        fecha_registro_label = tk.Label(frame2, text='Fecha de registro', bg="#C6D9E3", font=("Arial", 12))
+        fecha_registro_label.place(x=100, y=250)
+
         self.fecha_registro = tk.Entry(frame2, )
         self.fecha_registro.place(x=100, y=300)
+
+        rol_label = tk.Label(frame2, text='Rol del usuario', bg="#C6D9E3", font=("Arial", 12))
+        rol_label.place(x=100, y=350)
 
         self.rol_var = tk.StringVar()
         self.rol = tk.ttk.Combobox(frame2, values=('vendedor', 'admin'), textvariable=self.rol_var)

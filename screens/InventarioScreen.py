@@ -42,24 +42,24 @@ class Inventario(tk.Frame):
         Labelframe.place(x=20, y=30, width=400, height=500)
 
         lblnombre = Label(Labelframe, text="Nombre: ", font=("Arial", 12), bg="#C6D9E3", fg="black")
-        lblnombre.place(x=10, y=10)
+        lblnombre.place(x=10, y=20)
         self.nombre = ttk.Entry(Labelframe, font=("Arial", 12))
         self.nombre.place(x=140, y=20, width=240, height=40)
 
         lblprecio = Label(Labelframe, text="Precio: ", font=("Arial", 12), bg="#C6D9E3", fg="black")
-        lblprecio.place(x=10, y=140)
+        lblprecio.place(x=10, y=80)
         self.precio = ttk.Entry(Labelframe, font=("Arial", 12))
-        self.precio.place(x=140, y=140, width=240, height=40)
+        self.precio.place(x=140, y=80, width=240, height=40)
 
         lblcosto = Label(Labelframe, text="Costo: ", font=("Arial", 12), bg="#C6D9E3", fg="black")
-        lblcosto.place(x=10, y=200)
+        lblcosto.place(x=10, y=140)
         self.costo = ttk.Entry(Labelframe, font=("Arial", 12))
-        self.costo.place(x=140, y=200, width=240, height=40)
+        self.costo.place(x=140, y=140, width=240, height=40)
 
         lblstock = Label(Labelframe, text="existencias: ", font=("Arial", 12), bg="#C6D9E3", fg="black")
-        lblstock.place(x=10, y=260)
+        lblstock.place(x=10, y=200)
         self.stock = ttk.Entry(Labelframe, font=("Arial", 12))
-        self.stock.place(x=140, y=260, width=240, height=40)
+        self.stock.place(x=140, y=200, width=240, height=40)
 
         boton_agregar = Button(Labelframe, text="Agregar", font=("Arial", 12), bg="gray", fg="white",
                                command=self.registrar)

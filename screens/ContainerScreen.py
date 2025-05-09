@@ -1,5 +1,6 @@
 import tkinter as tk
 from tkinter import *
+import os
 
 from PIL import Image, ImageTk
 
@@ -41,6 +42,9 @@ class Container(tk.Frame):
         self.show_frame(Ventas)
 
     def compras(self):
+        if user().rol != 'admin':
+            messagebox.showerror("Error", "No tienes permiso para acceder a esta sección.", parent=self)
+            return
         self.show_frame(Compras)
 
     def inventario(self):
@@ -50,6 +54,9 @@ class Container(tk.Frame):
         self.show_frame(ClientesScreen)
 
     def proveedores(self):  # Método para mostrar ProveedoresScreen
+        if user().rol != 'admin':
+            messagebox.showerror("Error", "No tienes permiso para acceder a esta sección.", parent=self)
+            return
         self.show_frame(ProveedoresScreen)
 
     def usuarios(self):
@@ -113,11 +120,14 @@ class Container(tk.Frame):
                           command=self.usuarios, bd=4, relief=RAISED)
         btnusers.place(x=650, y=170, width=140, height=50)
 
+        btnayuda = Button(frame1, bg="#2196F3", fg="white", font="sans 14 bold", text="Ayuda")
+        btnayuda.place(x=500, y=310, width=140, height=50) 
+
         logout_button = Button(frame1, text="Cerrar sesión", command=self.controlador.logout)
         logout_button.place(x=680, y=350, width=100, height=30)
 
-        self.logo_image = Image.open("imagenes/registradora.webp")
-        self.logo_image = self.logo_image.resize((220, 220))
+        self.logo_image = Image.open("imagenes/artvinil.png")
+        self.logo_image = self.logo_image.resize((210, 210))
         self.logo_image = ImageTk.PhotoImage(self.logo_image)
         self.logo_label = Label(frame1, image=self.logo_image, bg="#F5F5F5")
         self.logo_label.place(x=170, y=90, width=200, height=200)
@@ -128,3 +138,6 @@ class Container(tk.Frame):
         copyright_label = Label(frame1, text="© 2025 - Todos los derechos reservados", bg="#F5F5F5", fg="gray",
                                 font="sans 10")
         copyright_label.place(x=170, y=350)
+        
+        rif_label = Label(frame1, text="RIF: J-30788720-6", bg="#F5F5F5", fg="gray", font="sans 10")
+        rif_label.place(x=170, y=370)

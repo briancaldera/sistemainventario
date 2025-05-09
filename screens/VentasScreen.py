@@ -186,7 +186,7 @@ class Ventas(tk.Frame):
         nombre_producto = self.entry_nombre.get()
 
         producto = [x for x in self.catalogo if x.nombre == nombre_producto][0]
-        precio = producto.precio
+        precio = producto.costo
 
         self.entry_valor.config(state="normal")
         self.entry_valor.delete(0, tk.END)
