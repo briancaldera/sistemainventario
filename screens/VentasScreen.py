@@ -186,7 +186,7 @@ class Ventas(tk.Frame):
         nombre_producto = self.entry_nombre.get()
 
         producto = [x for x in self.catalogo if x.nombre == nombre_producto][0]
-        precio = producto.costo
+        precio = producto.precio
 
         self.entry_valor.config(state="normal")
         self.entry_valor.delete(0, tk.END)
@@ -254,6 +254,10 @@ class Ventas(tk.Frame):
 
         if not self.tree.get_children():
             messagebox.showerror("Error", "No hay productos para pagar", parent=self)
+            return
+
+        if self.referencia is None:
+            messagebox.showerror("Error", "No hay referencia disponible. Debe crear un referencia de cambio", parent=self)
             return
 
         ventana_pago = tk.Toplevel(self)
