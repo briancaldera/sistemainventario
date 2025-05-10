@@ -12,6 +12,7 @@ from screens.ConfigScreen import ConfigScreen
 from screens.ProveedoresScreen import ProveedoresScreen
 from screens.ReferenciaScreen import ReferenciaScreen
 from screens.VentasScreen import Ventas
+from utils.fs_util import get_resource_path
 from utils.utils import user
 from tkinter import messagebox
 
@@ -126,7 +127,10 @@ class Container(tk.Frame):
         logout_button = Button(frame1, text="Cerrar sesión", command=self.controlador.logout)
         logout_button.place(x=680, y=350, width=100, height=30)
 
-        self.logo_image = Image.open("imagenes/artvinil.png")
+        images_folder = get_resource_path('imagenes')
+        image_path = os.path.join(images_folder, "artvinil.png")
+
+        self.logo_image = Image.open(image_path)
         self.logo_image = self.logo_image.resize((210, 210))
         self.logo_image = ImageTk.PhotoImage(self.logo_image)
         self.logo_label = Label(frame1, image=self.logo_image, bg="#F5F5F5")
