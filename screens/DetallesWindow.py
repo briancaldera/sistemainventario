@@ -45,9 +45,14 @@ class DetallesWindow(tk.Toplevel):
 
         self.productos_tabla.delete(*self.productos_tabla.get_children())
         for producto in self.productos_con_cantidad:
-            self.productos_tabla.insert("", "end", values=(
-                producto["producto"].nombre, producto["producto"].precio, producto['producto'].precio * self.referencia.valor, producto["cantidad"],
-                producto["producto"].precio * producto["cantidad"]))
+            if isinstance(operacion, Compra):
+                self.productos_tabla.insert("", "end", values=(
+                    producto["producto"].nombre, producto["producto"].costo, producto['producto'].costo * self.referencia.valor, producto["cantidad"],
+                    producto["producto"].costo * producto["cantidad"]))
+            else:
+                self.productos_tabla.insert("", "end", values=(
+                    producto["producto"].nombre, producto["producto"].precio, producto['producto'].precio * self.referencia.valor, producto["cantidad"],
+                    producto["producto"].precio * producto["cantidad"]))
 
     def widgets(self):
         frame1 = tk.Frame(self, bg="#C6D9E3", highlightbackground="gray", highlightthickness=1)

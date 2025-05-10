@@ -64,7 +64,7 @@ class Compras(tk.Frame):
         self.entry_nombre.place(x=280, y=10, width=180)
         self.refrescar_productos()
 
-        label_valor = tk.Label(Lblframe, text="Precio: ", font=("Arial", 12), bg="#C6D9E3")
+        label_valor = tk.Label(Lblframe, text="Costo: ", font=("Arial", 12), bg="#C6D9E3")
         label_valor.place(x=470, y=12)
 
         self.entry_valor = ttk.Entry(Lblframe, font=("Arial", 12), state="readonly")
@@ -86,18 +86,18 @@ class Compras(tk.Frame):
         Scrol_x = Scrollbar(treframe, orient=HORIZONTAL)
         Scrol_x.pack(side=BOTTOM, fill=X)
 
-        self.tree = ttk.Treeview(treframe, columns=("Producto", "Precio", "Cantidad", "subtotal"), show="headings",
+        self.tree = ttk.Treeview(treframe, columns=("Producto", "Costo", "Cantidad", "subtotal"), show="headings",
                                  yscrollcommand=Scrol_y.set, xscrollcommand=Scrol_x.set)
         Scrol_y.config(command=self.tree.yview)
         Scrol_x.config(command=self.tree.xview)
 
         self.tree.heading("#1", text="Producto")
-        self.tree.heading("#2", text="Precio")
+        self.tree.heading("#2", text="Costo")
         self.tree.heading("#3", text="Cantidad")
         self.tree.heading("#4", text="Subtotal")
 
         self.tree.column("Producto", anchor="center")
-        self.tree.column("Precio", anchor="center")
+        self.tree.column("Costo", anchor="center")
         self.tree.column("Cantidad", anchor="center")
         self.tree.column("subtotal", anchor="center")
 
@@ -175,11 +175,11 @@ class Compras(tk.Frame):
         nombre_producto = self.entry_nombre.get()
 
         producto = [x for x in self.catalogo if x.nombre == nombre_producto][0]
-        precio = producto.precio
+        costo = producto.costo
 
         self.entry_valor.config(state="normal")
         self.entry_valor.delete(0, tk.END)
-        self.entry_valor.insert(0, precio)
+        self.entry_valor.insert(0, costo)
         self.entry_valor.config(state="readonly")
 
     def actualizar_total(self):
@@ -196,19 +196,19 @@ class Compras(tk.Frame):
 
     def agregar_a_la_cesta(self):
         producto = self.entry_nombre.get()
-        precio = self.entry_valor.get()
+        costo = self.entry_valor.get()
         cantidad = self.entry_cantidad.get()
 
-        if producto and precio and cantidad:
+        if producto and costo and cantidad:
             cantidad = int(cantidad)
             producto_encontrado = [x for x in self.catalogo if x.nombre == producto][0]
 
-            precio = float(precio)
-            subtotal = precio * cantidad
+            costo = float(costo)
+            subtotal = costo * cantidad
 
             self.cesta.append({'producto': producto_encontrado, 'cantidad': cantidad})
 
-            self.tree.insert("", "end", values=(producto, f"{precio: .2f}", cantidad, f"{subtotal: .2f}"))
+            self.tree.insert("", "end", values=(producto, f"{costo: .2f}", cantidad, f"{subtotal: .2f}"))
 
             self.entry_nombre.set("")
             self.entry_valor.config(state="normal")
@@ -235,6 +235,10 @@ class Compras(tk.Frame):
 
         if not self.tree.get_children():
             messagebox.showerror("Error", "No hay productos para pagar", parent=self)
+            return
+
+        if self.referencia is None:
+            messagebox.showerror("Error", "No hay referencia disponible. Debe crear un referencia de cambio", parent=self)
             return
 
         ventana_pago = tk.Toplevel(self)

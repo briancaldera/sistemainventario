@@ -43,11 +43,11 @@ class ReferenciaScreen(tk.Toplevel):
             self.referencia_service.crear_referencia(valor)
             self.refrescar_lista()
             messagebox.showinfo('Referencia creada',
-                                'La referencia de cambio ha sido creada y será usada como referencia principal')
+                                'La referencia de cambio ha sido creada y será usada como referencia principal', parent=self)
 
         except Exception as e:
             print(e)
-            messagebox.showerror('Error', 'Ha ocurrido un error al intentar crear la referencia')
+            messagebox.showerror('Error', 'Ha ocurrido un error al intentar crear la referencia', parent=self)
 
     def refrescar_lista(self):
         referencias = self.referencia_service.listar()
