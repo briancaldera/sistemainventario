@@ -1,8 +1,9 @@
 import tkinter as tk
 from decimal import Decimal
-from tkinter import Frame, Label, LabelFrame, Scrollbar, Button, VERTICAL, RIGHT, Y, HORIZONTAL, BOTTOM, X, BOTH
+from tkinter import Frame, Label, LabelFrame, Scrollbar, Button, VERTICAL, RIGHT, Y, HORIZONTAL, BOTTOM, X, BOTH, LEFT
 from tkinter import ttk, messagebox
 from typing import TypedDict
+
 from model.compra import Compra
 from model.producto import Producto
 from model.proveedor import ProveedorAR
@@ -13,7 +14,24 @@ from services.ReferenciaService import ReferenciaService
 
 Cesta = list[TypedDict('Cesta', {'producto': Producto, 'cantidad': int})]
 
+class FiltroBusqueda(tk.Frame):
 
+    def __init__(self, parent, **kwargs):
+        super().__init__(parent, **kwargs)
+
+        self.buscar_producto = tk.StringVar()
+        self.buscar_proveedor = tk.StringVar()
+
+        tk.Label(self, text="Buscar producto:").pack()
+        tk.Entry(self, textvariable=self.buscar_producto).pack()
+
+        tk.Label(self, text="Buscar proveedor:").pack()
+        tk.Entry(self, textvariable=self.buscar_proveedor).pack()
+
+        tk.Button(self, text="Buscar", command=self.buscar).pack()
+
+    def buscar(self):
+        pass
 class Compras(tk.Frame):
 
     def __init__(self, parent, controller):
@@ -334,12 +352,34 @@ class VentanaCompras(tk.Toplevel):
         self.mercadeo_service = MercadeoService()
 
         self.title("Compras")
-        self.geometry("800x500")
+        self.geometry("800x550")
         self.resizable(False, False)
         self.config(bg="#C6D9E3")
 
-        facturas = Label(self, bg="#C6D9E3", text="Facturas registradas", font=("Arial", 20))
+        facturas = Label(self, bg="#C6D9E3", text="Órdenes de compra registradas", font=("Arial", 20))
         facturas.place(x=150, y=15)
+
+        # Campos de búsqueda
+        frame_busqueda = Frame(self, bg="#C6D9E3")
+        frame_busqueda.place(x=10, y=60, width=780, height=30)
+
+        label_buscar_proveedor = Label(frame_busqueda, text="Proveedor:", bg="#C6D9E3", font=("Arial", 12))
+        label_buscar_proveedor.pack(side=LEFT, padx=5)
+        self.entry_buscar_proveedor = ttk.Entry(frame_busqueda, font=("Arial", 12))
+        self.entry_buscar_proveedor.pack(side=LEFT, padx=5)
+        self.entry_buscar_proveedor.bind("<KeyRelease>", self.buscar_compras)
+
+        label_buscar_fecha = Label(frame_busqueda, text="Fecha:", bg="#C6D9E3", font=("Arial", 12))
+        label_buscar_fecha.pack(side=LEFT, padx=5)
+        self.entry_buscar_fecha = ttk.Entry(frame_busqueda, font=("Arial", 12))
+        self.entry_buscar_fecha.pack(side=LEFT, padx=5)
+        self.entry_buscar_fecha.bind("<KeyRelease>", self.buscar_compras)
+
+        label_buscar_factura = Label(frame_busqueda, text="Órden de compra #:", bg="#C6D9E3", font=("Arial", 12))
+        label_buscar_factura.pack(side=LEFT, padx=5)
+        self.entry_buscar_factura = ttk.Entry(frame_busqueda, font=("Arial", 12))
+        self.entry_buscar_factura.pack(side=LEFT, padx=5)
+        self.entry_buscar_factura.bind("<KeyRelease>", self.buscar_compras)
 
         treframe = Frame(self, bg="#C6D9E3")
         treframe.place(x=10, y=100, width=780, height=380)
@@ -350,40 +390,52 @@ class VentanaCompras(tk.Toplevel):
         Scrol_x = Scrollbar(treframe, orient=HORIZONTAL)
         Scrol_x.pack(side=BOTTOM, fill=X)
 
-        tree_facturas = ttk.Treeview(treframe, columns=("Numero de compra", "Proveedor", "Costo total", 'Fecha'),
+        tree_compras = ttk.Treeview(treframe, columns=("Numero de compra", "Proveedor", "Costo total", 'Fecha'),
                                      show="headings", yscrollcommand=Scrol_y.set, xscrollcommand=Scrol_x.set)
 
-        self.tree_compras = tree_facturas
-        Scrol_y.config(command=tree_facturas.yview)
-        Scrol_x.config(command=tree_facturas.xview)
+        self.tree_compras = tree_compras
+        Scrol_y.config(command=tree_compras.yview)
+        Scrol_x.config(command=tree_compras.xview)
 
-        tree_facturas.heading("#1", text="Numero de compra")
-        tree_facturas.heading("#2", text="Proveedor")
-        tree_facturas.heading("#3", text="Costo total")
-        tree_facturas.heading("#4", text="Fecha")
+        tree_compras.heading("#1", text="Numero de compra")
+        tree_compras.heading("#2", text="Proveedor")
+        tree_compras.heading("#3", text="Costo total")
+        tree_compras.heading("#4", text="Fecha")
 
-        tree_facturas.column("Numero de compra", width=100, anchor="center")
-        tree_facturas.column("Proveedor", width=200, anchor="center")
-        tree_facturas.column("Costo total", width=130, anchor="center")
-        tree_facturas.column("Fecha", width=130, anchor="center")
+        tree_compras.column("Numero de compra", width=100, anchor="center")
+        tree_compras.column("Proveedor", width=200, anchor="center")
+        tree_compras.column("Costo total", width=130, anchor="center")
+        tree_compras.column("Fecha", width=130, anchor="center")
 
-        tree_facturas.pack(fill=BOTH, expand=True)
+        tree_compras.pack(fill=BOTH, expand=True)
 
-        tree_facturas.bind('<<TreeviewSelect>>', self.on_compra_seleccion)
+        tree_compras.bind('<<TreeviewSelect>>', self.on_compra_seleccion)
         self.refrescar_compras()
 
-    def refrescar_compras(self):
+    def refrescar_compras(self, termino_proveedor='', termino_fecha='', termino_compra=''):
         compras = self.mercadeo_service.listar_compras()
+        self.compras_registradas = compras
 
         self.tree_compras.delete(*self.tree_compras.get_children())
 
-        for compra in compras:
-            # Insert each venta in the self.tree_ventas considering the columns
-
+        for compra in self.compras_registradas:
             proveedor = ProveedorAR.get_by_id(compra.proveedor_id)
+            proveedor_nombre = proveedor.nombre.lower()
+            fecha_compra = str(compra.fecha).lower()
+            numero_factura = str(compra.numero_compra).lower()
 
-            self.tree_compras.insert("", 0, text=compra.compra_id, values=(
-                compra.numero_compra, proveedor.nombre, compra.costo_total, compra.fecha))
+            if (termino_proveedor in proveedor_nombre and
+                    termino_fecha in fecha_compra and
+                    termino_compra in numero_factura):
+                self.tree_compras.insert("", 0, text=compra.compra_id, values=(
+                    compra.numero_compra, proveedor.nombre, compra.costo_total,
+                    compra.fecha))
+
+    def buscar_compras(self, event):
+        termino_proveedor = self.entry_buscar_proveedor.get().lower()
+        termino_fecha = self.entry_buscar_fecha.get().lower()
+        termino_compra = self.entry_buscar_factura.get().lower()
+        self.refrescar_compras(termino_proveedor, termino_fecha, termino_compra)
 
     def on_compra_seleccion(self, event):
 
