@@ -377,12 +377,34 @@ class VentanaVentas(tk.Toplevel):
         self.mercadeo_service = MercadeoService()
         self.ventas: list[Ventas] = []
         self.title("Ventas")
-        self.geometry("800x500")
+        self.geometry("800x550")
         self.resizable(False, False)
         self.config(bg="#C6D9E3")
 
         facturas = Label(self, bg="#C6D9E3", text="Facturas registradas", font=("Arial", 20))
         facturas.place(x=150, y=15)
+
+        # Campos de búsqueda
+        frame_busqueda = Frame(self, bg="#C6D9E3")
+        frame_busqueda.place(x=10, y=60, width=780, height=30)
+
+        label_buscar_cliente = Label(frame_busqueda, text="Cliente:", bg="#C6D9E3", font=("Arial", 12))
+        label_buscar_cliente.pack(side=LEFT, padx=5)
+        self.entry_buscar_cliente = ttk.Entry(frame_busqueda, font=("Arial", 12))
+        self.entry_buscar_cliente.pack(side=LEFT, padx=5)
+        self.entry_buscar_cliente.bind("<KeyRelease>", self.buscar_venta)
+
+        label_buscar_fecha = Label(frame_busqueda, text="Fecha:", bg="#C6D9E3", font=("Arial", 12))
+        label_buscar_fecha.pack(side=LEFT, padx=5)
+        self.entry_buscar_fecha = ttk.Entry(frame_busqueda, font=("Arial", 12))
+        self.entry_buscar_fecha.pack(side=LEFT, padx=5)
+        self.entry_buscar_fecha.bind("<KeyRelease>", self.buscar_venta)
+
+        label_buscar_factura = Label(frame_busqueda, text="Factura #:", bg="#C6D9E3", font=("Arial", 12))
+        label_buscar_factura.pack(side=LEFT, padx=5)
+        self.entry_buscar_factura = ttk.Entry(frame_busqueda, font=("Arial", 12))
+        self.entry_buscar_factura.pack(side=LEFT, padx=5)
+        self.entry_buscar_factura.bind("<KeyRelease>", self.buscar_venta)
 
         treframe = Frame(self, bg="#C6D9E3")
         treframe.place(x=10, y=100, width=780, height=380)
@@ -417,19 +439,30 @@ class VentanaVentas(tk.Toplevel):
         tree_facturas.bind('<<TreeviewSelect>>', self.on_venta_seleccion)
         self.refrescar_ventas()
 
-    def refrescar_ventas(self):
+    def buscar_venta(self, event=None):
+        termino_cliente = self.entry_buscar_cliente.get().lower()
+        termino_fecha = self.entry_buscar_fecha.get().lower()
+        termino_factura = self.entry_buscar_factura.get().lower()
+        self.refrescar_ventas(termino_cliente, termino_fecha, termino_factura)    
+
+    def refrescar_ventas(self, termino_cliente="", termino_fecha="", termino_factura=""):
         ventas = self.mercadeo_service.listar_ventas()
+        self.ventas_registradas = ventas  # Guardamos todas las ventas
 
         self.tree_ventas.delete(*self.tree_ventas.get_children())
 
-        for venta in ventas:
-            # Insert each venta in the self.tree_ventas considering the columns
-
+        for venta in self.ventas_registradas:
             cliente = ClienteAR.get_by_id(venta.cliente_id)
+            cliente_nombre = cliente.nombre.lower()
+            fecha_venta = str(venta.fecha).lower()  # Convertir la fecha a string antes de usar lower()
+            numero_factura = str(venta.numero_factura).lower()
 
-            self.tree_ventas.insert("", 0, text=venta.venta_id, values=(
-                venta.numero_factura, cliente.nombre, venta.total_neto, venta.total_pagado,
-                venta.fecha))
+            if (termino_cliente in cliente_nombre and
+                    termino_fecha in fecha_venta and
+                    termino_factura in numero_factura):
+                self.tree_ventas.insert("", 0, text=venta.venta_id, values=(
+                    venta.numero_factura, cliente.nombre, venta.total_neto, venta.total_pagado,
+                    venta.fecha))
 
     def on_venta_seleccion(self, event):
 
