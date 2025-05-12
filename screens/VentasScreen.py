@@ -425,8 +425,7 @@ class VentanaVentas(tk.Toplevel):
         frame_busqueda_2 = Frame(self, bg="#C6D9E3")
         frame_busqueda_2.pack(fill=X, padx=10, pady=5)
 
-        # add a label and entry for producto name
-        label_buscar_producto = Label(frame_busqueda_2, text="Producto", bg="#C6D9E3", font=("Arial", 12))
+        label_buscar_producto = Label(frame_busqueda_2, text="Producto:", bg="#C6D9E3", font=("Arial", 12))
         label_buscar_producto.pack(side=LEFT, padx=5)
         self.entry_buscar_producto = ttk.Entry(frame_busqueda_2, font=("Arial", 12))
         self.entry_buscar_producto.pack(side=LEFT, padx=5)
@@ -485,11 +484,8 @@ class VentanaVentas(tk.Toplevel):
             fecha_venta = str(venta.fecha).lower()
             numero_factura = str(venta.numero_factura).lower()
 
-
-            # Get the list of products associated with the sale
-            # Check if the product name exists in the venta's product list
             productos = Producto.select().join(Egreso).where(Egreso.venta_id == venta.venta_id)
-            producto_match = any(termino_producto in producto.nombre for producto in productos)
+            producto_match = any(termino_producto in producto.nombre.lower() for producto in productos)
 
             if (termino_cliente in cliente_nombre and
                     termino_fecha in fecha_venta and

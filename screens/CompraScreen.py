@@ -6,10 +6,8 @@ from tkinter import ttk, messagebox
 from typing import TypedDict
 
 from PIL import Image, ImageTk
-import os
-from utils.fs_util import get_resource_path
 
-from model.compra import Compra
+from model.compra import Compra, Ingreso
 from model.producto import Producto
 from model.proveedor import ProveedorAR
 from screens.DetallesWindow import DetallesWindow
@@ -400,6 +398,15 @@ class VentanaCompras(tk.Toplevel):
         self.entry_buscar_factura.pack(side=LEFT, padx=5)
         self.entry_buscar_factura.bind("<KeyRelease>", self.buscar_compras)
 
+        frame_busqueda_2 = Frame(self, bg="#C6D9E3")
+        frame_busqueda_2.pack(fill=X, padx=10, pady=5)
+
+        label_buscar_producto = Label(frame_busqueda_2, text="Producto:", bg="#C6D9E3", font=("Arial", 12))
+        label_buscar_producto.pack(side=LEFT, padx=5)
+        self.entry_buscar_producto = ttk.Entry(frame_busqueda_2, font=("Arial", 12))
+        self.entry_buscar_producto.pack(side=LEFT, padx=5)
+        self.entry_buscar_producto.bind("<KeyRelease>", self.buscar_compras)
+
         treframe = Frame(self, bg="#C6D9E3")
         treframe.pack(fill=BOTH, expand=True, padx=10, pady=5)
 
@@ -431,7 +438,7 @@ class VentanaCompras(tk.Toplevel):
         tree_compras.bind('<<TreeviewSelect>>', self.on_compra_seleccion)
         self.refrescar_compras()
 
-    def refrescar_compras(self, termino_proveedor='', termino_fecha='', termino_compra=''):
+    def refrescar_compras(self, termino_proveedor='', termino_fecha='', termino_compra='', termino_producto=''):
         compras = self.mercadeo_service.listar_compras()
         self.compras_registradas = compras
 
@@ -443,18 +450,23 @@ class VentanaCompras(tk.Toplevel):
             fecha_compra = str(compra.fecha).lower()
             numero_factura = str(compra.numero_compra).lower()
 
+            productos = Producto.select().join(Ingreso).where(Ingreso.compra_id == compra.compra_id)
+            producto_match = any(termino_producto in producto.nombre.lower() for producto in productos)
+
             if (termino_proveedor in proveedor_nombre and
                     termino_fecha in fecha_compra and
-                    termino_compra in numero_factura):
+                    termino_compra in numero_factura and
+            (not termino_producto or producto_match)):
                 self.tree_compras.insert("", 0, text=compra.compra_id, values=(
                     compra.numero_compra, proveedor.nombre, compra.costo_total,
                     compra.fecha))
 
-    def buscar_compras(self, event):
+    def buscar_compras(self, _event):
         termino_proveedor = self.entry_buscar_proveedor.get().lower()
         termino_fecha = self.entry_buscar_fecha.get().lower()
         termino_compra = self.entry_buscar_factura.get().lower()
-        self.refrescar_compras(termino_proveedor, termino_fecha, termino_compra)
+        termino_producto = self.entry_buscar_producto.get().lower()
+        self.refrescar_compras(termino_proveedor, termino_fecha, termino_compra, termino_producto)
 
     def on_compra_seleccion(self, event):
 
