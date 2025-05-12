@@ -6,7 +6,7 @@ from tkinter import ttk, messagebox
 from typing import TypedDict
 from model.cliente import ClienteAR
 from model.producto import Producto
-from model.venta import Venta
+from model.venta import Venta, Egreso
 from screens.DetallesWindow import DetallesWindow
 from services.MercadeoService import MercadeoService
 from services.ProductoService import ProductoService
@@ -422,6 +422,17 @@ class VentanaVentas(tk.Toplevel):
         self.entry_buscar_factura.pack(side=LEFT, padx=5)
         self.entry_buscar_factura.bind("<KeyRelease>", self.buscar_venta)
 
+        frame_busqueda_2 = Frame(self, bg="#C6D9E3")
+        frame_busqueda_2.pack(fill=X, padx=10, pady=5)
+
+        # add a label and entry for producto name
+        label_buscar_producto = Label(frame_busqueda_2, text="Producto", bg="#C6D9E3", font=("Arial", 12))
+        label_buscar_producto.pack(side=LEFT, padx=5)
+        self.entry_buscar_producto = ttk.Entry(frame_busqueda_2, font=("Arial", 12))
+        self.entry_buscar_producto.pack(side=LEFT, padx=5)
+        self.entry_buscar_producto.bind("<KeyRelease>", self.buscar_venta)
+
+
         treframe = Frame(self, bg="#C6D9E3")
         treframe.pack(fill=BOTH, expand=True, padx=10, pady=5)
 
@@ -455,32 +466,40 @@ class VentanaVentas(tk.Toplevel):
         tree_facturas.bind('<<TreeviewSelect>>', self.on_venta_seleccion)
         self.refrescar_ventas()
 
-    def buscar_venta(self, event=None):
+    def buscar_venta(self, _event=None):
         termino_cliente = self.entry_buscar_cliente.get().lower()
         termino_fecha = self.entry_buscar_fecha.get().lower()
         termino_factura = self.entry_buscar_factura.get().lower()
-        self.refrescar_ventas(termino_cliente, termino_fecha, termino_factura)    
+        termino_producto = self.entry_buscar_producto.get().lower()
+        self.refrescar_ventas(termino_cliente, termino_fecha, termino_factura, termino_producto)
 
-    def refrescar_ventas(self, termino_cliente="", termino_fecha="", termino_factura=""):
+    def refrescar_ventas(self, termino_cliente="", termino_fecha="", termino_factura="", termino_producto=""):
         ventas = self.mercadeo_service.listar_ventas()
-        self.ventas_registradas = ventas  # Guardamos todas las ventas
+        self.ventas_registradas = ventas
 
         self.tree_ventas.delete(*self.tree_ventas.get_children())
 
         for venta in self.ventas_registradas:
             cliente = ClienteAR.get_by_id(venta.cliente_id)
             cliente_nombre = cliente.nombre.lower()
-            fecha_venta = str(venta.fecha).lower()  # Convertir la fecha a string antes de usar lower()
+            fecha_venta = str(venta.fecha).lower()
             numero_factura = str(venta.numero_factura).lower()
+
+
+            # Get the list of products associated with the sale
+            # Check if the product name exists in the venta's product list
+            productos = Producto.select().join(Egreso).where(Egreso.venta_id == venta.venta_id)
+            producto_match = any(termino_producto in producto.nombre for producto in productos)
 
             if (termino_cliente in cliente_nombre and
                     termino_fecha in fecha_venta and
-                    termino_factura in numero_factura):
+                    termino_factura in numero_factura and
+                    (not termino_producto or producto_match)):
                 self.tree_ventas.insert("", 0, text=venta.venta_id, values=(
                     venta.numero_factura, cliente.nombre, venta.total_neto, venta.total_pagado,
                     venta.fecha))
 
-    def on_venta_seleccion(self, event):
+    def on_venta_seleccion(self, _event):
 
         seleccion = self.tree_ventas.selection()
 
