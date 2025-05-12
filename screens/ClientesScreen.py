@@ -1,9 +1,12 @@
+import os
 import tkinter as tk
-import tkinter.ttk as ttk
 from tkinter import messagebox
+from tkinter import ttk, Frame, Label, Scrollbar, VERTICAL, HORIZONTAL, BOTH, X, Y, LEFT, RIGHT, BOTTOM
 
-from model.cliente import Cliente
+from PIL import Image, ImageTk
+
 from services.ClienteService import ClienteService
+from utils.fs_util import get_resource_path
 
 
 class ClientesScreen(tk.Frame):
@@ -60,8 +63,7 @@ class ClientesScreen(tk.Frame):
                                                                                          height=40)
         ttk.Button(lblframe_cliente, text="Editar", command=self.editar_cliente).place(x=80, y=310, width=240,
                                                                                        height=40)
-        # ttk.Button(lblframe_cliente, text="Eliminar", command=self.eliminar_cliente).place(x=80, y=370, width=240,
-        #                                                                                    height=40)
+        ttk.Button(lblframe_cliente, text="Reporte de Clientes", command=lambda: ClienteReporteScreen(self)).place(x=80, y=370, width=240, height=40)
 
         # Treeview para la tabla de clientes
         treframe = tk.Frame(frame2, bg="white")
@@ -209,3 +211,103 @@ class ClientesScreen(tk.Frame):
         self.nombre_entry.delete(0, tk.END)
         self.telefono_entry.delete(0, tk.END)
         self.direccion_entry.delete(0, tk.END)
+
+class ClienteReporteScreen(tk.Toplevel):
+    def __init__(self, parent):
+        super().__init__(parent)
+
+        self.title("Reporte de Clientes")
+        self.geometry("800x550")
+        self.resizable(False, False)
+        self.config(bg="#C6D9E3")
+
+        self.cliente_service = ClienteService()
+        self.clientes = []
+
+        # Header
+        images_folder = get_resource_path('imagenes')
+        image_path = os.path.join(images_folder, "artvinil.png")
+
+        header_frame = Frame(self, bg="#C6D9E3")
+        header_frame.pack(fill='x')
+
+        self.logo_image = Image.open(image_path)
+        self.logo_image = self.logo_image.resize((150, 150))
+        self.logo_image = ImageTk.PhotoImage(self.logo_image)
+        self.logo_label = Label(header_frame, image=self.logo_image, bg="#C6D9E3")
+        self.logo_label.pack(pady=10)
+
+        # align titulo to the top right of the window
+        titulo_label = Label(header_frame, text="Reporte de clientes", font=("Arial", 16), bg="#C6D9E3")
+        titulo_label.pack(pady=10)
+
+        # Search Fields
+        frame_busqueda = Frame(self, bg="#C6D9E3")
+        frame_busqueda.pack(fill=X, padx=10, pady=5)
+
+        label_buscar_cedula = Label(frame_busqueda, text="Cédula:", bg="#C6D9E3", font=("Arial", 12))
+        label_buscar_cedula.pack(side=LEFT, padx=5)
+        self.entry_buscar_cedula = ttk.Entry(frame_busqueda, font=("Arial", 12))
+        self.entry_buscar_cedula.pack(side=LEFT, padx=5)
+        self.entry_buscar_cedula.bind("<KeyRelease>", self.buscar_clientes)
+
+        label_buscar_nombre = Label(frame_busqueda, text="Nombre:", bg="#C6D9E3", font=("Arial", 12))
+        label_buscar_nombre.pack(side=LEFT, padx=5)
+        self.entry_buscar_nombre = ttk.Entry(frame_busqueda, font=("Arial", 12))
+        self.entry_buscar_nombre.pack(side=LEFT, padx=5)
+        self.entry_buscar_nombre.bind("<KeyRelease>", self.buscar_clientes)
+
+        # Treeview
+        treframe = Frame(self, bg="#C6D9E3")
+        treframe.pack(fill=BOTH, expand=True, padx=10, pady=5)
+
+        Scrol_y = Scrollbar(treframe, orient=VERTICAL)
+        Scrol_y.pack(side=RIGHT, fill=Y)
+
+        Scrol_x = Scrollbar(treframe, orient=HORIZONTAL)
+        Scrol_x.pack(side=BOTTOM, fill=X)
+
+        self.tree_clientes = ttk.Treeview(
+            treframe,
+            columns=("Cédula", "Nombre", "Teléfono", "Dirección"),
+            show="headings",
+            yscrollcommand=Scrol_y.set,
+            xscrollcommand=Scrol_x.set
+        )
+
+        Scrol_y.config(command=self.tree_clientes.yview)
+        Scrol_x.config(command=self.tree_clientes.xview)
+
+        self.tree_clientes.heading("#1", text="Cédula")
+        self.tree_clientes.heading("#2", text="Nombre")
+        self.tree_clientes.heading("#3", text="Teléfono")
+        self.tree_clientes.heading("#4", text="Dirección")
+
+        self.tree_clientes.column("Cédula", width=100, anchor="center")
+        self.tree_clientes.column("Nombre", width=200, anchor="center")
+        self.tree_clientes.column("Teléfono", width=130, anchor="center")
+        self.tree_clientes.column("Dirección", width=200, anchor="center")
+
+        self.tree_clientes.pack(fill=BOTH, expand=True)
+
+        self.refrescar_clientes()
+
+    def buscar_clientes(self, event=None):
+        termino_cedula = self.entry_buscar_cedula.get().lower()
+        termino_nombre = self.entry_buscar_nombre.get().lower()
+        self.refrescar_clientes(termino_cedula, termino_nombre)
+
+    def refrescar_clientes(self, termino_cedula="", termino_nombre=""):
+        self.clientes = self.cliente_service.get_all_clientes()
+        self.tree_clientes.delete(*self.tree_clientes.get_children())
+
+        for cliente in self.clientes:
+            cedula = cliente.cedula.lower()
+            nombre = cliente.nombre.lower()
+
+            if termino_cedula in cedula and termino_nombre in nombre:
+                self.tree_clientes.insert(
+                    "",
+                    "end",
+                    values=(cliente.cedula, cliente.nombre, cliente.telefono, cliente.direccion)
+                )
