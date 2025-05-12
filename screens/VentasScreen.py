@@ -11,6 +11,9 @@ from screens.DetallesWindow import DetallesWindow
 from services.MercadeoService import MercadeoService
 from services.ProductoService import ProductoService
 from services.ReferenciaService import ReferenciaService
+from PIL import Image, ImageTk
+import os
+from utils.fs_util import get_resource_path
 
 Cesta = list[TypedDict('Cesta', {'producto': Producto, 'cantidad': int})]
 
@@ -381,12 +384,25 @@ class VentanaVentas(tk.Toplevel):
         self.resizable(False, False)
         self.config(bg="#C6D9E3")
 
-        facturas = Label(self, bg="#C6D9E3", text="Facturas registradas", font=("Arial", 20))
-        facturas.place(x=150, y=15)
+        images_folder = get_resource_path('imagenes')
+        image_path = os.path.join(images_folder, "artvinil.png")
+
+        header_frame = Frame(self, bg="#C6D9E3")
+        header_frame.pack(fill='x')
+
+        self.logo_image = Image.open(image_path)
+        self.logo_image = self.logo_image.resize((150, 150))
+        self.logo_image = ImageTk.PhotoImage(self.logo_image)
+        self.logo_label = Label(header_frame, image=self.logo_image, bg="#C6D9E3")
+        self.logo_label.pack(pady=10)
+
+        # align titulo to the top right of the window
+        titulo_label = Label(header_frame, text="Reporte de facturas de ventas", font=("Arial", 16), bg="#C6D9E3")
+        titulo_label.pack(pady=10)
 
         # Campos de búsqueda
         frame_busqueda = Frame(self, bg="#C6D9E3")
-        frame_busqueda.place(x=10, y=60, width=780, height=30)
+        frame_busqueda.pack(fill=X, padx=10, pady=5)
 
         label_buscar_cliente = Label(frame_busqueda, text="Cliente:", bg="#C6D9E3", font=("Arial", 12))
         label_buscar_cliente.pack(side=LEFT, padx=5)
@@ -407,7 +423,7 @@ class VentanaVentas(tk.Toplevel):
         self.entry_buscar_factura.bind("<KeyRelease>", self.buscar_venta)
 
         treframe = Frame(self, bg="#C6D9E3")
-        treframe.place(x=10, y=100, width=780, height=380)
+        treframe.pack(fill=BOTH, expand=True, padx=10, pady=5)
 
         Scrol_y = Scrollbar(treframe, orient=VERTICAL)
         Scrol_y.pack(side=RIGHT, fill=Y)
