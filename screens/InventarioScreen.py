@@ -5,10 +5,11 @@ from tkinter import *
 from tkinter import messagebox
 from tkinter import ttk, Frame, Label, Scrollbar, VERTICAL, HORIZONTAL, BOTH, X, Y, LEFT, RIGHT, BOTTOM
 
+from PIL import Image, ImageTk
+
 from model.producto import Producto
 from services.ProductoService import ProductoService
 from utils.fs_util import get_resource_path
-from PIL import Image, ImageTk
 
 
 class Inventario(tk.Frame):
@@ -310,9 +311,12 @@ class InventarioReporteScreen(tk.Toplevel):
         self.entry_buscar_costo.pack(side=LEFT, padx=5)
         self.entry_buscar_costo.bind("<KeyRelease>", self.buscar_productos)
 
-        label_buscar_existencia = Label(frame_busqueda, text="Existencia:", bg="#C6D9E3", font=("Arial", 12))
+        frame_busqueda_2 = Frame(self, bg="#C6D9E3")
+        frame_busqueda_2.pack(fill=X, padx=10, pady=5)
+
+        label_buscar_existencia = Label(frame_busqueda_2, text="Existencia:", bg="#C6D9E3", font=("Arial", 12))
         label_buscar_existencia.pack(side=LEFT, padx=5)
-        self.entry_buscar_existencia = ttk.Entry(frame_busqueda, font=("Arial", 12))
+        self.entry_buscar_existencia = ttk.Entry(frame_busqueda_2, font=("Arial", 12))
         self.entry_buscar_existencia.pack(side=LEFT, padx=5)
         self.entry_buscar_existencia.bind("<KeyRelease>", self.buscar_productos)
 
@@ -371,7 +375,7 @@ class InventarioReporteScreen(tk.Toplevel):
             if (termino_nombre in nombre and
                     termino_precio in precio and
                     termino_costo in costo and
-                    termino_existencia in existencia):
+                    (termino_existencia == "" or termino_existencia == existencia)):
                 self.tree_productos.insert(
                     "",
                     "end",
