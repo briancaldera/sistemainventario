@@ -1,14 +1,18 @@
+import os
 import sqlite3
-from tkinter import *
 import tkinter as tk
-from tkinter import ttk, messagebox
+from tkinter import *
+from tkinter import messagebox
+from tkinter import ttk, Frame, Label, Scrollbar, VERTICAL, HORIZONTAL, BOTH, X, Y, LEFT, RIGHT, BOTTOM
+
+from PIL import Image, ImageTk
 
 from model.producto import Producto
 from services.ProductoService import ProductoService
+from utils.fs_util import get_resource_path
 
 
 class Inventario(tk.Frame):
-
     _colores_existencias: dict[str, str] = {
         'agotado': '#fc035a',
         'escaso': '#fcbe03',
@@ -68,6 +72,10 @@ class Inventario(tk.Frame):
         boton_editar = Button(Labelframe, text="Editar", font=("Arial", 12), bg="gray", fg="white",
                               command=self.editar_producto)
         boton_editar.place(x=80, y=400, width=240, height=40)
+
+        boton_reporte = Button(Labelframe, text="Reporte de Inventario", font=("Arial", 12), bg="gray", fg="white",
+                               command=lambda: InventarioReporteScreen(self))
+        boton_reporte.place(x=80, y=280, width=240, height=40)
 
         # tabla
         treFrame = Frame(frame2, bg="white")
@@ -153,7 +161,9 @@ class Inventario(tk.Frame):
             else:
                 estado = 'agotado'
 
-            self.tre.insert("", 0, iid=producto.producto_id, text=producto.producto_id, values=(producto.producto_id, producto.nombre, producto.precio, producto.costo, producto.existencia), tags=(estado,))
+            self.tre.insert("", 0, iid=producto.producto_id, text=producto.producto_id,
+                            values=(producto.producto_id, producto.nombre, producto.precio, producto.costo,
+                                    producto.existencia), tags=(estado,))
 
     def registrar(self):
         nombre = self.nombre.get()
@@ -249,3 +259,125 @@ class Inventario(tk.Frame):
         self.precio.delete(0, tk.END)
         self.costo.delete(0, tk.END)
         self.stock.delete(0, tk.END)
+
+
+class InventarioReporteScreen(tk.Toplevel):
+    def __init__(self, parent):
+        super().__init__(parent)
+
+        self.title("Reporte de Inventario")
+        self.geometry("900x600")
+        self.resizable(False, False)
+        self.config(bg="#C6D9E3")
+
+        self.producto_service = ProductoService()
+        self.productos = []
+
+        # Header
+        images_folder = get_resource_path('imagenes')
+        image_path = os.path.join(images_folder, "artvinil.png")
+
+        header_frame = Frame(self, bg="#C6D9E3")
+        header_frame.pack(fill='x')
+
+        self.logo_image = Image.open(image_path)
+        self.logo_image = self.logo_image.resize((150, 150))
+        self.logo_image = ImageTk.PhotoImage(self.logo_image)
+        self.logo_label = Label(header_frame, image=self.logo_image, bg="#C6D9E3")
+        self.logo_label.pack(pady=10)
+
+        titulo_label = Label(header_frame, text="Reporte de Inventario", font=("Arial", 16), bg="#C6D9E3")
+        titulo_label.pack(pady=10)
+
+        # Search Fields
+        frame_busqueda = Frame(self, bg="#C6D9E3")
+        frame_busqueda.pack(fill=X, padx=10, pady=5)
+
+        label_buscar_nombre = Label(frame_busqueda, text="Nombre:", bg="#C6D9E3", font=("Arial", 12))
+        label_buscar_nombre.pack(side=LEFT, padx=5)
+        self.entry_buscar_nombre = ttk.Entry(frame_busqueda, font=("Arial", 12))
+        self.entry_buscar_nombre.pack(side=LEFT, padx=5)
+        self.entry_buscar_nombre.bind("<KeyRelease>", self.buscar_productos)
+
+        label_buscar_precio = Label(frame_busqueda, text="Precio:", bg="#C6D9E3", font=("Arial", 12))
+        label_buscar_precio.pack(side=LEFT, padx=5)
+        self.entry_buscar_precio = ttk.Entry(frame_busqueda, font=("Arial", 12))
+        self.entry_buscar_precio.pack(side=LEFT, padx=5)
+        self.entry_buscar_precio.bind("<KeyRelease>", self.buscar_productos)
+
+        label_buscar_costo = Label(frame_busqueda, text="Costo:", bg="#C6D9E3", font=("Arial", 12))
+        label_buscar_costo.pack(side=LEFT, padx=5)
+        self.entry_buscar_costo = ttk.Entry(frame_busqueda, font=("Arial", 12))
+        self.entry_buscar_costo.pack(side=LEFT, padx=5)
+        self.entry_buscar_costo.bind("<KeyRelease>", self.buscar_productos)
+
+        frame_busqueda_2 = Frame(self, bg="#C6D9E3")
+        frame_busqueda_2.pack(fill=X, padx=10, pady=5)
+
+        label_buscar_existencia = Label(frame_busqueda_2, text="Existencia:", bg="#C6D9E3", font=("Arial", 12))
+        label_buscar_existencia.pack(side=LEFT, padx=5)
+        self.entry_buscar_existencia = ttk.Entry(frame_busqueda_2, font=("Arial", 12))
+        self.entry_buscar_existencia.pack(side=LEFT, padx=5)
+        self.entry_buscar_existencia.bind("<KeyRelease>", self.buscar_productos)
+
+        # Treeview
+        treframe = Frame(self, bg="#C6D9E3")
+        treframe.pack(fill=BOTH, expand=True, padx=10, pady=5)
+
+        Scrol_y = Scrollbar(treframe, orient=VERTICAL)
+        Scrol_y.pack(side=RIGHT, fill=Y)
+
+        Scrol_x = Scrollbar(treframe, orient=HORIZONTAL)
+        Scrol_x.pack(side=BOTTOM, fill=X)
+
+        self.tree_productos = ttk.Treeview(
+            treframe,
+            columns=("Nombre", "Precio", "Costo", "Existencia"),
+            show="headings",
+            yscrollcommand=Scrol_y.set,
+            xscrollcommand=Scrol_x.set
+        )
+
+        Scrol_y.config(command=self.tree_productos.yview)
+        Scrol_x.config(command=self.tree_productos.xview)
+
+        self.tree_productos.heading("#1", text="Nombre")
+        self.tree_productos.heading("#2", text="Precio")
+        self.tree_productos.heading("#3", text="Costo")
+        self.tree_productos.heading("#4", text="Existencia")
+
+        self.tree_productos.column("Nombre", width=200, anchor="center")
+        self.tree_productos.column("Precio", width=100, anchor="center")
+        self.tree_productos.column("Costo", width=100, anchor="center")
+        self.tree_productos.column("Existencia", width=100, anchor="center")
+
+        self.tree_productos.pack(fill=BOTH, expand=True)
+
+        self.refrescar_productos()
+
+    def buscar_productos(self, event=None):
+        termino_nombre = self.entry_buscar_nombre.get().lower()
+        termino_precio = self.entry_buscar_precio.get().lower()
+        termino_costo = self.entry_buscar_costo.get().lower()
+        termino_existencia = self.entry_buscar_existencia.get().lower()
+        self.refrescar_productos(termino_nombre, termino_precio, termino_costo, termino_existencia)
+
+    def refrescar_productos(self, termino_nombre="", termino_precio="", termino_costo="", termino_existencia=""):
+        self.productos = self.producto_service.listar()
+        self.tree_productos.delete(*self.tree_productos.get_children())
+
+        for producto in self.productos:
+            nombre = producto.nombre.lower()
+            precio = str(producto.precio).lower()
+            costo = str(producto.costo).lower()
+            existencia = str(producto.existencia).lower()
+
+            if (termino_nombre in nombre and
+                    termino_precio in precio and
+                    termino_costo in costo and
+                    (termino_existencia == "" or termino_existencia == existencia)):
+                self.tree_productos.insert(
+                    "",
+                    "end",
+                    values=(producto.nombre, producto.precio, producto.costo, producto.existencia)
+                )

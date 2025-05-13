@@ -1,7 +1,12 @@
+import os
 import tkinter as tk
-import tkinter.ttk as ttk
 from tkinter import messagebox
+from tkinter import ttk, Frame, Label, Scrollbar, VERTICAL, HORIZONTAL, BOTH, X, Y, LEFT, RIGHT, BOTTOM
+
+from PIL import Image, ImageTk
+
 from services.ProveedorServices import ProveedorService
+from utils.fs_util import get_resource_path
 
 
 class ProveedoresScreen(tk.Frame):
@@ -54,8 +59,9 @@ class ProveedoresScreen(tk.Frame):
                                                                                              height=40)
         ttk.Button(lblframe_proveedor, text="Editar", command=self.editar_proveedor).place(x=80, y=260, width=240,
                                                                                            height=40)
-        # ttk.Button(lblframe_proveedor, text="Eliminar", command=self.eliminar_proveedor).place(x=80, y=320, width=240,
-        #                                                                                        height=40)
+        ttk.Button(lblframe_proveedor, text="Reporte de proveedores",
+                   command=lambda: ProveedorReporteScreen(self)).place(x=80, y=320, width=240,
+                                                                       height=40)
 
         # Treeview para la tabla de proveedores
         treframe = tk.Frame(frame2, bg="white")
@@ -152,7 +158,8 @@ class ProveedoresScreen(tk.Frame):
         self.tree.delete(*self.tree.get_children())
 
         for proveedor in proveedores:
-            self.tree.insert('', tk.END, values=(proveedor.nombre, proveedor.telefono, proveedor.direccion), iid=proveedor.id)
+            self.tree.insert('', tk.END, values=(proveedor.nombre, proveedor.telefono, proveedor.direccion),
+                             iid=proveedor.id)
 
         self._proveedor_seleccionado = None
 
@@ -186,3 +193,90 @@ class ProveedoresScreen(tk.Frame):
         self.nombre_entry.delete(0, tk.END)
         self.telefono_entry.delete(0, tk.END)
         self.direccion_entry.delete(0, tk.END)
+
+
+class ProveedorReporteScreen(tk.Toplevel):
+    def __init__(self, parent):
+        super().__init__(parent)
+
+        self.title("Reporte de Proveedores")
+        self.geometry("800x550")
+        self.resizable(False, False)
+        self.config(bg="#C6D9E3")
+
+        self.proveedor_service = ProveedorService()
+        self.proveedores = []
+
+        # Header
+        images_folder = get_resource_path('imagenes')
+        image_path = os.path.join(images_folder, "artvinil.png")
+
+        header_frame = Frame(self, bg="#C6D9E3")
+        header_frame.pack(fill='x')
+
+        self.logo_image = Image.open(image_path)
+        self.logo_image = self.logo_image.resize((150, 150))
+        self.logo_image = ImageTk.PhotoImage(self.logo_image)
+        self.logo_label = Label(header_frame, image=self.logo_image, bg="#C6D9E3")
+        self.logo_label.pack(pady=10)
+
+        # Search Fields
+        frame_busqueda = Frame(self, bg="#C6D9E3")
+        frame_busqueda.pack(fill=X, padx=10, pady=5)
+
+        label_buscar_nombre = Label(frame_busqueda, text="Nombre:", bg="#C6D9E3", font=("Arial", 12))
+        label_buscar_nombre.pack(side=LEFT, padx=5)
+        self.entry_buscar_nombre = ttk.Entry(frame_busqueda, font=("Arial", 12))
+        self.entry_buscar_nombre.pack(side=LEFT, padx=5)
+        self.entry_buscar_nombre.bind("<KeyRelease>", self.buscar_proveedores)
+
+        label_buscar_telefono = Label(frame_busqueda, text="Teléfono:", bg="#C6D9E3", font=("Arial", 12))
+        label_buscar_telefono.pack(side=LEFT, padx=5)
+        self.entry_buscar_telefono = ttk.Entry(frame_busqueda, font=("Arial", 12))
+        self.entry_buscar_telefono.pack(side=LEFT, padx=5)
+        self.entry_buscar_telefono.bind("<KeyRelease>", self.buscar_proveedores)
+
+        # Treeview
+        treframe = Frame(self, bg="#C6D9E3")
+        treframe.pack(fill=BOTH, expand=True, padx=10, pady=5)
+
+        Scrol_y = Scrollbar(treframe, orient=VERTICAL)
+        Scrol_y.pack(side=RIGHT, fill=Y)
+
+        Scrol_x = Scrollbar(treframe, orient=HORIZONTAL)
+        Scrol_x.pack(side=BOTTOM, fill=X)
+
+        self.tree_proveedores = ttk.Treeview(treframe, columns=("Nombre", "Teléfono", "Dirección"), show="headings",
+                                             yscrollcommand=Scrol_y.set, xscrollcommand=Scrol_x.set)
+
+        Scrol_y.config(command=self.tree_proveedores.yview)
+        Scrol_x.config(command=self.tree_proveedores.xview)
+
+        self.tree_proveedores.heading("#1", text="Nombre")
+        self.tree_proveedores.heading("#2", text="Teléfono")
+        self.tree_proveedores.heading("#3", text="Dirección")
+
+        self.tree_proveedores.column("Nombre", width=200, anchor="center")
+        self.tree_proveedores.column("Teléfono", width=130, anchor="center")
+        self.tree_proveedores.column("Dirección", width=200, anchor="center")
+
+        self.tree_proveedores.pack(fill=BOTH, expand=True)
+
+        self.refrescar_proveedores()
+
+    def buscar_proveedores(self, event=None):
+        termino_nombre = self.entry_buscar_nombre.get().lower()
+        termino_telefono = self.entry_buscar_telefono.get().lower()
+        self.refrescar_proveedores(termino_nombre, termino_telefono)
+
+    def refrescar_proveedores(self, termino_nombre="", termino_telefono=""):
+        self.proveedores = self.proveedor_service.get_all_proveedores()
+        self.tree_proveedores.delete(*self.tree_proveedores.get_children())
+
+        for proveedor in self.proveedores:
+            nombre = proveedor.nombre.lower()
+            telefono = proveedor.telefono.lower()
+
+            if termino_nombre in nombre and termino_telefono in telefono:
+                self.tree_proveedores.insert("", "end",
+                                             values=(proveedor.nombre, proveedor.telefono, proveedor.direccion))

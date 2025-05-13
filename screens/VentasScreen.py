@@ -6,11 +6,14 @@ from tkinter import ttk, messagebox
 from typing import TypedDict
 from model.cliente import ClienteAR
 from model.producto import Producto
-from model.venta import Venta
+from model.venta import Venta, Egreso
 from screens.DetallesWindow import DetallesWindow
 from services.MercadeoService import MercadeoService
 from services.ProductoService import ProductoService
 from services.ReferenciaService import ReferenciaService
+from PIL import Image, ImageTk
+import os
+from utils.fs_util import get_resource_path
 
 Cesta = list[TypedDict('Cesta', {'producto': Producto, 'cantidad': int})]
 
@@ -381,12 +384,25 @@ class VentanaVentas(tk.Toplevel):
         self.resizable(False, False)
         self.config(bg="#C6D9E3")
 
-        facturas = Label(self, bg="#C6D9E3", text="Facturas registradas", font=("Arial", 20))
-        facturas.place(x=150, y=15)
+        images_folder = get_resource_path('imagenes')
+        image_path = os.path.join(images_folder, "artvinil.png")
+
+        header_frame = Frame(self, bg="#C6D9E3")
+        header_frame.pack(fill='x')
+
+        self.logo_image = Image.open(image_path)
+        self.logo_image = self.logo_image.resize((150, 150))
+        self.logo_image = ImageTk.PhotoImage(self.logo_image)
+        self.logo_label = Label(header_frame, image=self.logo_image, bg="#C6D9E3")
+        self.logo_label.pack(pady=10)
+
+        # align titulo to the top right of the window
+        titulo_label = Label(header_frame, text="Reporte de facturas de ventas", font=("Arial", 16), bg="#C6D9E3")
+        titulo_label.pack(pady=10)
 
         # Campos de búsqueda
         frame_busqueda = Frame(self, bg="#C6D9E3")
-        frame_busqueda.place(x=10, y=60, width=780, height=30)
+        frame_busqueda.pack(fill=X, padx=10, pady=5)
 
         label_buscar_cliente = Label(frame_busqueda, text="Cliente:", bg="#C6D9E3", font=("Arial", 12))
         label_buscar_cliente.pack(side=LEFT, padx=5)
@@ -406,8 +422,18 @@ class VentanaVentas(tk.Toplevel):
         self.entry_buscar_factura.pack(side=LEFT, padx=5)
         self.entry_buscar_factura.bind("<KeyRelease>", self.buscar_venta)
 
+        frame_busqueda_2 = Frame(self, bg="#C6D9E3")
+        frame_busqueda_2.pack(fill=X, padx=10, pady=5)
+
+        label_buscar_producto = Label(frame_busqueda_2, text="Producto:", bg="#C6D9E3", font=("Arial", 12))
+        label_buscar_producto.pack(side=LEFT, padx=5)
+        self.entry_buscar_producto = ttk.Entry(frame_busqueda_2, font=("Arial", 12))
+        self.entry_buscar_producto.pack(side=LEFT, padx=5)
+        self.entry_buscar_producto.bind("<KeyRelease>", self.buscar_venta)
+
+
         treframe = Frame(self, bg="#C6D9E3")
-        treframe.place(x=10, y=100, width=780, height=380)
+        treframe.pack(fill=BOTH, expand=True, padx=10, pady=5)
 
         Scrol_y = Scrollbar(treframe, orient=VERTICAL)
         Scrol_y.pack(side=RIGHT, fill=Y)
@@ -439,32 +465,37 @@ class VentanaVentas(tk.Toplevel):
         tree_facturas.bind('<<TreeviewSelect>>', self.on_venta_seleccion)
         self.refrescar_ventas()
 
-    def buscar_venta(self, event=None):
+    def buscar_venta(self, _event=None):
         termino_cliente = self.entry_buscar_cliente.get().lower()
         termino_fecha = self.entry_buscar_fecha.get().lower()
         termino_factura = self.entry_buscar_factura.get().lower()
-        self.refrescar_ventas(termino_cliente, termino_fecha, termino_factura)    
+        termino_producto = self.entry_buscar_producto.get().lower()
+        self.refrescar_ventas(termino_cliente, termino_fecha, termino_factura, termino_producto)
 
-    def refrescar_ventas(self, termino_cliente="", termino_fecha="", termino_factura=""):
+    def refrescar_ventas(self, termino_cliente="", termino_fecha="", termino_factura="", termino_producto=""):
         ventas = self.mercadeo_service.listar_ventas()
-        self.ventas_registradas = ventas  # Guardamos todas las ventas
+        self.ventas_registradas = ventas
 
         self.tree_ventas.delete(*self.tree_ventas.get_children())
 
         for venta in self.ventas_registradas:
             cliente = ClienteAR.get_by_id(venta.cliente_id)
             cliente_nombre = cliente.nombre.lower()
-            fecha_venta = str(venta.fecha).lower()  # Convertir la fecha a string antes de usar lower()
+            fecha_venta = str(venta.fecha).lower()
             numero_factura = str(venta.numero_factura).lower()
+
+            productos = Producto.select().join(Egreso).where(Egreso.venta_id == venta.venta_id)
+            producto_match = any(termino_producto in producto.nombre.lower() for producto in productos)
 
             if (termino_cliente in cliente_nombre and
                     termino_fecha in fecha_venta and
-                    termino_factura in numero_factura):
+                    termino_factura in numero_factura and
+                    (not termino_producto or producto_match)):
                 self.tree_ventas.insert("", 0, text=venta.venta_id, values=(
                     venta.numero_factura, cliente.nombre, venta.total_neto, venta.total_pagado,
                     venta.fecha))
 
-    def on_venta_seleccion(self, event):
+    def on_venta_seleccion(self, _event):
 
         seleccion = self.tree_ventas.selection()
 

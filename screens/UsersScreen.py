@@ -1,8 +1,10 @@
 import tkinter as tk
-from tkinter import ttk
 from tkinter import messagebox
+from tkinter import ttk
+from tkinter import ttk, Frame, Label, Scrollbar, VERTICAL, HORIZONTAL, BOTH, X, Y, LEFT, RIGHT, BOTTOM
 
 from screens.RegisterScreen import RegisterScreen
+from services.UserService import UserService
 
 
 class UsersScreen(tk.Frame):
@@ -24,7 +26,6 @@ class UsersScreen(tk.Frame):
         usuarion_label = tk.Label(frame2, text='Nombre de usuario', bg="#C6D9E3", font=("Arial", 12))
         usuarion_label.place(x=100, y=150)
 
-
         self.username = tk.Entry(frame2, )
         self.username.place(x=100, y=200)
 
@@ -40,7 +41,6 @@ class UsersScreen(tk.Frame):
         self.rol_var = tk.StringVar()
         self.rol = tk.ttk.Combobox(frame2, values=('vendedor', 'admin'), textvariable=self.rol_var)
         self.rol.bind('<<ComboboxSelected>>', self.change_user_role)
-
 
         self.rol.place(x=100, y=400)
 
@@ -72,6 +72,10 @@ class UsersScreen(tk.Frame):
 
         self.register_user_button = tk.Button(self, text='Registrar usuario', command=self.show_register_user_screen)
         self.register_user_button.place(x=200, y=600)
+
+        boton_reporte = tk.Button(self, text="Reporte de Usuarios", font=("Arial", 12), bg="gray", fg="white",
+                                  command=lambda: UserReporteScreen(self))
+        boton_reporte.place(x=800, y=30, width=240, height=40)
 
     def show_register_user_screen(self):
         register_user_screen = RegisterScreen()
@@ -120,3 +124,92 @@ class UsersScreen(tk.Frame):
 
         for user in users:
             self.tree.insert('', tk.END, values=(user.name.name, user.created_at, user.rol))
+
+
+class UserReporteScreen(tk.Toplevel):
+    def __init__(self, parent):
+        super().__init__(parent)
+
+        self.title("Reporte de Usuarios")
+        self.geometry("800x550")
+        self.resizable(False, False)
+        self.config(bg="#C6D9E3")
+
+        self.user_service = UserService()
+        self.users = []
+
+        # Header
+        header_frame = Frame(self, bg="#C6D9E3")
+        header_frame.pack(fill='x')
+
+        titulo_label = Label(header_frame, text="Reporte de Usuarios", font=("Arial", 16), bg="#C6D9E3")
+        titulo_label.pack(pady=10)
+
+        # Search Fields
+        frame_busqueda = Frame(self, bg="#C6D9E3")
+        frame_busqueda.pack(fill=X, padx=10, pady=5)
+
+        label_buscar_username = Label(frame_busqueda, text="Nombre de usuario:", bg="#C6D9E3", font=("Arial", 12))
+        label_buscar_username.pack(side=LEFT, padx=5)
+        self.entry_buscar_username = ttk.Entry(frame_busqueda, font=("Arial", 12))
+        self.entry_buscar_username.pack(side=LEFT, padx=5)
+        self.entry_buscar_username.bind("<KeyRelease>", self.buscar_usuarios)
+
+        label_buscar_rol = Label(frame_busqueda, text="Rol:", bg="#C6D9E3", font=("Arial", 12))
+        label_buscar_rol.pack(side=LEFT, padx=5)
+        self.entry_buscar_rol = ttk.Entry(frame_busqueda, font=("Arial", 12))
+        self.entry_buscar_rol.pack(side=LEFT, padx=5)
+        self.entry_buscar_rol.bind("<KeyRelease>", self.buscar_usuarios)
+
+        # Treeview
+        treframe = Frame(self, bg="#C6D9E3")
+        treframe.pack(fill=BOTH, expand=True, padx=10, pady=5)
+
+        Scrol_y = Scrollbar(treframe, orient=VERTICAL)
+        Scrol_y.pack(side=RIGHT, fill=Y)
+
+        Scrol_x = Scrollbar(treframe, orient=HORIZONTAL)
+        Scrol_x.pack(side=BOTTOM, fill=X)
+
+        self.tree_users = ttk.Treeview(
+            treframe,
+            columns=("Nombre de usuario", "Fecha de registro", "Rol"),
+            show="headings",
+            yscrollcommand=Scrol_y.set,
+            xscrollcommand=Scrol_x.set
+        )
+
+        Scrol_y.config(command=self.tree_users.yview)
+        Scrol_x.config(command=self.tree_users.xview)
+
+        self.tree_users.heading("#1", text="Nombre de usuario")
+        self.tree_users.heading("#2", text="Fecha de registro")
+        self.tree_users.heading("#3", text="Rol")
+
+        self.tree_users.column("Nombre de usuario", width=200, anchor="center")
+        self.tree_users.column("Fecha de registro", width=150, anchor="center")
+        self.tree_users.column("Rol", width=100, anchor="center")
+
+        self.tree_users.pack(fill=BOTH, expand=True)
+
+        self.refrescar_usuarios()
+
+    def buscar_usuarios(self, event=None):
+        termino_username = self.entry_buscar_username.get().lower()
+        termino_rol = self.entry_buscar_rol.get().lower()
+        self.refrescar_usuarios(termino_username, termino_rol)
+
+    def refrescar_usuarios(self, termino_username="", termino_rol=""):
+        self.users = self.user_service.get_users()
+        self.tree_users.delete(*self.tree_users.get_children())
+
+        for user in self.users:
+            username = user.name.name.lower()
+            role = user.rol.lower()
+
+            if termino_username in username and termino_rol in role:
+                self.tree_users.insert(
+                    "",
+                    "end",
+                    values=(user.name.name, user.created_at, user.rol)
+                )
